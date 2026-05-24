@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Foto ke Teks - AI Vision</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .page-exit { opacity: 0 !important; transform: scale(1.05) !important; filter: blur(10px); transition: all 0.5s ease-in-out; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .upload-area {
+            @apply border-2 border-dashed border-slate-700 rounded-[2rem] p-10 flex flex-col items-center justify-center transition-all cursor-pointer bg-slate-800/20 hover:bg-slate-800/40 hover:border-emerald-500/50;
+        }
+        .upload-area.drag-over {
+            @apply border-emerald-500 bg-emerald-500/10 scale-[0.98];
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        .scanning-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to bottom, transparent, #10b981, transparent);
+            animation: scan 2s linear infinite;
+            box-shadow: 0 0 15px #10b981;
+            z-index: 10;
+        }
+        /* Custom styles for range sliders */
+        input[type=range] { @apply h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500; }
+        .cropper-view-box, .cropper-face { border-radius: 0; }
+        .edit-tool-btn { @apply p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all text-slate-400 hover:text-white border border-slate-700; }
+        #preview-container { min-height: 300px; }
+        .cropper-container { @apply rounded-2xl overflow-hidden; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-6">
+
+    <div class="w-full max-w-2xl mt-8 space-y-8">
+        <!-- Tombol Kembali -->
+        <a href="kalkulator_fisika.html" id="btn-home-back" class="inline-flex items-center space-x-2 text-sm font-semibold text-slate-400 hover:text-emerald-400 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            <span>Kembali ke Kalkulator Fisika</span>
+        </a>
+
+        <header class="text-center space-y-2">
+            <h1 class="text-3xl font-bold text-white tracking-tight">Kerjakan tugas dengan mengunggahnya</h1>
+            <p class="text-slate-500 text-sm">Unggah foto dokumen atau catatanmu untuk menyalin teks secara digital dengan AI.</p>
+        </header>
+
+        <main class="space-y-6">
+            <!-- Area Unggah -->
+            <div id="drop-zone" class="upload-area group">
+                <input type="file" id="file-input" class="hidden" accept="image/*">
+                
+                <div id="upload-placeholder" class="text-center space-y-4">
+                    <div class="w-16 h-16 bg-slate-700/50 rounded-2xl flex items-center justify-center text-slate-400 mx-auto group-hover:text-emerald-500 group-hover:bg-emerald-500/10 transition-all">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm font-bold text-white">Klik atau Tarik Foto ke Sini</p>
+                            <p class="text-xs text-slate-500 mt-1">Mendukung format JPG, PNG, atau HEIC</p>
+                        </div>
+                        <div class="flex items-center justify-center gap-2">
+                            <div class="h-[1px] w-8 bg-slate-700"></div>
+                            <span class="text-[10px] font-bold text-slate-600 uppercase">Atau</span>
+                            <div class="h-[1px] w-8 bg-slate-700"></div>
+                        </div>
+                        <button type="button" id="open-camera" class="px-6 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-2 mx-auto cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            Buka Kamera
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Camera Interface -->
+                <div id="camera-container" class="hidden relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-700 bg-black">
+                    <video id="video-feed" class="w-full h-full object-cover" autoplay playsinline></video>
+                    <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+                        <button id="capture-photo" class="p-4 bg-emerald-500 text-white rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer">
+                            <div class="w-6 h-6 border-4 border-white rounded-full"></div>
+                        </button>
+                        <button id="close-camera" class="p-4 bg-slate-800 text-white rounded-full shadow-lg hover:bg-red-500 transition-all cursor-pointer">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview & Editor Area -->
+                <div id="preview-container" class="hidden relative w-full rounded-2xl overflow-hidden border border-slate-700 bg-slate-950">
+                    <div id="scanning-effect" class="hidden scanning-line"></div>
+                    <div class="max-h-[500px] overflow-hidden">
+                        <img id="image-preview" class="block max-w-full" src="" alt="Preview">
+                    </div>
+                    <button id="remove-image" class="absolute top-4 right-4 p-2 bg-slate-900/80 hover:bg-red-500 text-white rounded-xl transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Edit Toolbar -->
+            <div id="edit-toolbar" class="hidden bg-slate-800 border border-slate-700 p-4 rounded-2xl space-y-4 shadow-xl">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Alat Edit Gambar</span>
+                    <div class="flex gap-2">
+                        <button id="crop-btn" class="edit-tool-btn" title="Potong Gambar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h10m0-14H9a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2V9a2 2 0 00-2-2z"/></svg>
+                        </button>
+                        <button id="rotate-btn" class="edit-tool-btn" title="Putar 90°">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] text-slate-400 font-bold uppercase">Kecerahan</label>
+                            <span id="brightness-val" class="text-[10px] text-emerald-500 font-mono">100%</span>
+                        </div>
+                        <input type="range" id="brightness-slider" min="0" max="200" value="100" class="w-full">
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] text-slate-400 font-bold uppercase">Kontras</label>
+                            <span id="contrast-val" class="text-[10px] text-emerald-500 font-mono">100%</span>
+                        </div>
+                        <input type="range" id="contrast-slider" min="0" max="200" value="100" class="w-full">
+                    </div>
+                </div>
+                <p class="text-[9px] text-slate-500 italic text-center">Gunakan kotak pada gambar untuk memotong (crop) bagian teks saja.</p>
+            </div>
+
+            <!-- Action Button -->
+            <button id="solve-btn" disabled class="w-full py-4 bg-slate-800 text-slate-500 font-bold rounded-2xl transition-all border border-slate-700 disabled:cursor-not-allowed flex items-center justify-center gap-3">
+                <span>Ekstrak Teks dari Foto</span>
+            </button>
+
+            <!-- Result Section -->
+            <div id="result-card" class="hidden bg-slate-800 border border-emerald-500/30 p-6 rounded-[2rem] shadow-2xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+                    <h3 class="text-xs font-bold text-emerald-500 uppercase tracking-widest">Hasil Ekstraksi Teks</h3>
+                    <button id="copy-text-btn" class="text-[10px] text-slate-400 hover:text-emerald-400 font-bold uppercase transition-colors cursor-pointer">Salin Teks</button>
+                </div>
+                <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                    <textarea id="ai-response" class="w-full h-64 bg-slate-900/50 p-4 rounded-xl border border-slate-700 font-['Times_New_Roman',_serif] text-base text-white leading-relaxed focus:border-emerald-500 outline-none transition-all resize-none custom-scrollbar" placeholder="Hasil teks akan muncul di sini..."></textarea>
+                </div>
+                <button id="ai-solve-btn" class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>Kerjakan AI</span>
+                </button>
+                <div id="ai-thank-you" class="hidden w-full bg-slate-900/50 p-4 rounded-xl border border-slate-700 font-['Times_New_Roman',_serif] text-base text-white leading-relaxed mt-4"></div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "https://esm.run/@google/genai";
+        const API_KEY = "AIzaSyDAgc4vnS1AQBJFrCAwAW8OeNY6SZ2w1qA"; 
+        const ai = new GoogleGenAI({ apiKey: API_KEY });
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadPlaceholder = document.getElementById('upload-placeholder');
+        const previewContainer = document.getElementById('preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const removeImage = document.getElementById('remove-image');
+        const solveBtn = document.getElementById('solve-btn');
+        const resultCard = document.getElementById('result-card');
+        const aiResponse = document.getElementById('ai-response');
+        const scanningEffect = document.getElementById('scanning-effect');
+        const cameraContainer = document.getElementById('camera-container');
+        const editToolbar = document.getElementById('edit-toolbar');
+        const brightnessSlider = document.getElementById('brightness-slider');
+        const contrastSlider = document.getElementById('contrast-slider');
+        const brightnessVal = document.getElementById('brightness-val');
+        const contrastVal = document.getElementById('contrast-val');
+        const rotateBtn = document.getElementById('rotate-btn');
+        const cropBtn = document.getElementById('crop-btn');
+        const videoFeed = document.getElementById('video-feed');
+        let extractedText = "";
+        let stream = null;
+        let cropper = null;
+
+        // Handle Click Upload
+        dropZone.addEventListener('click', (e) => {
+            if (e.target.closest('#open-camera') || e.target.closest('#camera-container')) return;
+            if (previewContainer.classList.contains('hidden') && cameraContainer.classList.contains('hidden')) fileInput.click();
+        });
+
+        fileInput.addEventListener('change', handleFile);
+
+        // Handle Drag & Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        ['dragleave', 'drop'].forEach(event => {
+            dropZone.addEventListener(event, () => dropZone.classList.remove('drag-over'));
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                processFile(file);
+            }
+        });
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (file) processFile(file);
+        }
+
+        function initCropper() {
+            if (cropper) {
+                cropper.destroy();
+            }
+            cropper = new Cropper(imagePreview, {
+                viewMode: 1,
+                autoCropArea: 0.8,
+                responsive: true,
+                restore: false,
+                ready() {
+                    applyFilters();
+                }
+            });
+        }
+
+        function applyFilters() {
+            const brightness = brightnessSlider.value;
+            const contrast = contrastSlider.value;
+            brightnessVal.innerText = brightness + '%';
+            contrastVal.innerText = contrast + '%';
+            
+            const cropperContainer = document.querySelector('.cropper-container');
+            if (cropperContainer) {
+                cropperContainer.style.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
+            } else {
+                imagePreview.style.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
+            }
+        }
+
+        [brightnessSlider, contrastSlider].forEach(slider => {
+            slider.addEventListener('input', applyFilters);
+        });
+
+        rotateBtn.addEventListener('click', () => {
+            if (cropper) cropper.rotate(90);
+        });
+
+        cropBtn.addEventListener('click', () => {
+            if (!cropper) {
+                initCropper();
+                cropBtn.classList.add('bg-emerald-500/20', 'text-emerald-500', 'border-emerald-500/50');
+            } else {
+                cropper.destroy();
+                cropper = null;
+                cropBtn.classList.remove('bg-emerald-500/20', 'text-emerald-500', 'border-emerald-500/50');
+            }
+        });
+
+        function setPreview(src) {
+            brightnessSlider.value = 100;
+            contrastSlider.value = 100;
+            
+            imagePreview.src = src;
+            uploadPlaceholder.classList.add('hidden');
+            previewContainer.classList.remove('hidden');
+            editToolbar.classList.remove('hidden');
+            solveBtn.disabled = false;
+            solveBtn.classList.replace('bg-slate-800', 'bg-emerald-500');
+            solveBtn.classList.replace('text-slate-500', 'text-white');
+            
+            // Reset filter pada image element
+            imagePreview.style.filter = 'none';
+        }
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => setPreview(e.target.result);
+            reader.readAsDataURL(file);
+        }
+
+        // Kamera Logic
+        document.getElementById('open-camera').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                videoFeed.srcObject = stream;
+                uploadPlaceholder.classList.add('hidden');
+                cameraContainer.classList.remove('hidden');
+            } catch (err) {
+                alert("Gagal mengakses kamera: " + err.message);
+            }
+        });
+
+        document.getElementById('close-camera').addEventListener('click', (e) => {
+            e.stopPropagation();
+            stopCamera();
+        });
+
+        document.getElementById('capture-photo').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const canvas = document.createElement('canvas');
+            canvas.width = videoFeed.videoWidth;
+            canvas.height = videoFeed.videoHeight;
+            canvas.getContext('2d').drawImage(videoFeed, 0, 0);
+            
+            setPreview(canvas.toDataURL('image/png'));
+            stopCamera();
+        });
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            cameraContainer.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
+        }
+
+        removeImage.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            cropBtn.classList.remove('bg-emerald-500/20', 'text-emerald-500', 'border-emerald-500/50');
+            fileInput.value = '';
+            previewContainer.classList.add('hidden');
+            editToolbar.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
+            solveBtn.disabled = true;
+            solveBtn.classList.replace('bg-emerald-500', 'bg-slate-800');
+            solveBtn.classList.replace('bg-slate-700', 'bg-slate-800');
+            solveBtn.classList.replace('text-white', 'text-slate-500');
+            resultCard.classList.add('hidden');
+        });
+
+        solveBtn.addEventListener('click', () => {
+            solveBtn.disabled = true;
+            solveBtn.innerHTML = `
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Mengekstrak Teks...</span>
+            `;
+            scanningEffect.classList.remove('hidden');
+            aiResponse.value = 'Sedang mengekstrak teks...';
+
+            let canvas;
+            if (cropper) {
+                // Gunakan hasil crop jika cropper aktif
+                canvas = cropper.getCroppedCanvas();
+            } else {
+                // Gunakan gambar penuh jika cropper tidak aktif
+                canvas = document.createElement('canvas');
+                canvas.width = imagePreview.naturalWidth;
+                canvas.height = imagePreview.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(imagePreview, 0, 0);
+            }
+            
+            // Terapkan filter kecerahan dan kontras ke canvas final sebelum OCR
+            const filteredCanvas = document.createElement('canvas');
+            filteredCanvas.width = canvas.width;
+            filteredCanvas.height = canvas.height;
+            const ctx = filteredCanvas.getContext('2d');
+            ctx.filter = `brightness(${brightnessSlider.value}%) contrast(${contrastSlider.value}%)`;
+            ctx.drawImage(canvas, 0, 0);
+            
+            Tesseract.recognize(
+                filteredCanvas.toDataURL('image/jpeg', 0.9),
+                'ind+eng', // Mendukung Bahasa Indonesia dan Inggris
+                { logger: m => console.log(m) }
+            ).then(({ data: { text } }) => {
+                scanningEffect.classList.add('hidden');
+                resultCard.classList.remove('hidden');
+                
+                // Tampilkan hasil teks langsung ke textarea agar bisa diedit manual
+                aiResponse.value = text.trim() || 'Maaf, tidak ada teks yang terdeteksi. Pastikan gambar cukup terang dan teks terlihat jelas.';
+                extractedText = text.trim();
+                aiResponse.value = extractedText || 'Maaf, tidak ada teks yang terdeteksi. Pastikan gambar cukup terang dan teks terlihat jelas.';
+
+                solveBtn.innerHTML = '<span>Ekstraksi Selesai</span>';
+                solveBtn.classList.replace('bg-emerald-500', 'bg-slate-700');
+            }).catch(err => {
+                console.error(err);
+                scanningEffect.classList.add('hidden');
+                aiResponse.value = 'Terjadi kesalahan teknis saat memproses gambar. Silakan coba lagi.';
+                resultCard.classList.remove('hidden');
+                solveBtn.innerHTML = '<span>Coba Lagi</span>';
+                solveBtn.disabled = false;
+            });
+        });
+
+        document.getElementById('copy-text-btn').addEventListener('click', () => {
+            const text = aiResponse.value;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copy-text-btn');
+                btn.innerText = 'Tersalin!';
+                setTimeout(() => btn.innerText = 'Salin Teks', 2000);
+            });
+        });
+
+        document.getElementById('ai-solve-btn').addEventListener('click', async () => {
+            const thankYouDiv = document.getElementById('ai-thank-you');
+            const aiSolveBtn = document.getElementById('ai-solve-btn');
+
+            const textToProcess = aiResponse.value.trim();
+            if (!textToProcess || textToProcess.includes('Sedang mengekstrak')) {
+                thankYouDiv.innerText = "Tidak ada teks yang diekstrak untuk dikerjakan oleh AI.";
+                thankYouDiv.classList.remove('hidden');
+                return;
+            }
+
+            aiSolveBtn.disabled = true;
+            aiSolveBtn.innerHTML = `
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>AI Sedang Mengerjakan...</span>
+            `;
+            thankYouDiv.classList.add('hidden'); // Sembunyikan pesan sebelumnya
+
+            try {
+                const prompt = `Tolong bantu kerjakan atau jelaskan tugas dari teks hasil ekstraksi berikut ini. 
+                Gunakan bahasa manusia yang natural, jelas, dan mudah dipahami. 
+                PENTING: Jangan gunakan format Markdown sama sekali (seperti simbol **, ###, atau blok kode). 
+                Berikan jawaban dalam bentuk teks biasa (plain text) yang rapi dan bersih agar mudah dibaca.
+                
+                Teks: ${textToProcess}`;
+
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: prompt
+                });
+                thankYouDiv.innerText = response.text; // Tampilkan respons dari Gemini
+            } catch (error) {
+                console.error("Error calling Gemini AI:", error);
+                thankYouDiv.innerText = "Terjadi kesalahan saat menghubungi AI. Silakan coba lagi.";
+            } finally {
+                thankYouDiv.classList.remove('hidden');
+                aiSolveBtn.disabled = false;
+                aiSolveBtn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg><span>Kerjakan AI</span>`;
+            }
+        });
+
+        document.getElementById('btn-home-back').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.body.classList.add('page-exit');
+            setTimeout(() => {
+                window.location.href = 'kalkulator_fisika.html';
+            }, 500);
+        });
+    </script>
+</body>
+</html>

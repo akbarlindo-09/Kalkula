@@ -1,0 +1,2120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Rumus Fisika Dinamis</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Chart.js for Micro-Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Animasi Zoom-In Staggered untuk filter kartu */
+        @keyframes cardZoomIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .page-exit {
+            opacity: 0 !important;
+            transform: scale(1.05) !important;
+            filter: blur(10px);
+            transition: all 0.5s ease-in-out;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+        
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col items-center justify-start p-6">
+
+    <!-- Container Utama -->
+    <div class="w-full max-w-5xl mt-12 space-y-8">
+
+        <!-- ================= HALAMAN UTAMA ================= -->
+        <div id="main-page" class="space-y-8">
+            <!-- Home Button -->
+            <a href="index.html?mode=menu" id="btn-home-back" class="inline-flex items-center space-x-2 text-sm font-semibold text-slate-400 hover:text-emerald-400 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>Kembali ke Beranda</span>
+            </a>
+            
+            <!-- Header -->
+            <header class="text-center space-y-2">
+                <h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                    Kalkulator Fisika
+                </h1>
+                <p class="text-slate-500 max-w-md mx-auto text-sm sm:text-base">
+                    Cari rumus fisika yang kamu butuhkan. Isi variabel yang diketahui, dan sistem akan menghitung sisanya secara otomatis.
+                </p>
+            </header>
+
+            <!-- Bagian 1: Search Bar -->
+            <div class="relative max-w-md mx-auto">
+                <div class="flex items-center bg-slate-800 rounded-xl shadow-xs border border-slate-700 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-900 transition-all duration-200">
+                    <span class="pl-4 text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </span>
+                    <input 
+                        type="text" 
+                        id="searchBar" 
+                        placeholder="Cari rumus (Newton, Pascal, Archimedes, Hidrostatis)..." 
+                        class="w-full py-3.5 px-3 text-white placeholder-slate-500 bg-transparent focus:outline-none text-sm sm:text-base"
+                        autocomplete="off"
+                    >
+                    <button id="aiHistoryBtn" type="button" class="px-2 text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer" title="Riwayat Solusi AI">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </button>
+                    <button id="logoBtn" type="button" class="pr-4 pl-1 text-emerald-500 hover:text-emerald-400 transition-all cursor-pointer group" title="Kalkula Logo">
+                        <svg class="w-6 h-6 transform group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </button>
+                </div>
+                
+                <!-- Dropdown Hasil Pencarian -->
+                <div id="searchSuggestions" class="absolute left-0 right-0 mt-2 bg-slate-800 rounded-xl shadow-lg border border-slate-700 hidden z-10 overflow-hidden divide-y divide-slate-700">
+                </div>
+            </div>
+
+            <!-- Area Hasil Solusi AI (Tempat Khusus Hasil Jawaban) -->
+            <div id="aiResultContainer" class="hidden max-w-md mx-auto mt-6 bg-slate-800 p-6 rounded-2xl border border-indigo-500/30 shadow-2xl fade-in">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-xs font-extrabold text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Analisis & Solusi AI
+                    </h4>
+                    <div class="flex items-center gap-2">
+                        <span id="copyAiStatus" class="hidden text-[10px] text-emerald-400 font-bold uppercase">Tersalin!</span>
+                        <button id="copyAiBtn" class="p-1.5 text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg></button>
+                        <button id="closeAiBtn" class="p-1.5 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </div>
+                </div>
+                <div id="aiSolutionContent" class="prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed">
+                    <!-- Hasil Jawaban akan Muncul Disini -->
+                </div>
+            </div>
+
+            <!-- Filter Kategori (Baru) -->
+            <div id="categoryFilters" class="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto px-4">
+            </div>
+
+            <!-- Grid Card Rumus (Baru) -->
+            <div id="formulaGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Card di-inject via JS -->
+            </div>
+            
+            <!-- Safe State for empty search -->
+            <div id="emptyState" class="hidden text-center py-12 text-slate-400">
+                Rumus tidak ditemukan. Coba kata kunci lain!
+            </div>
+        </div>
+
+        <!-- ================= HALAMAN KALKULATOR ================= -->
+        <div id="calc-page" class="hidden space-y-6">
+            <!-- Back Button -->
+            <button id="btn-back-to-menu" class="inline-flex items-center space-x-2 text-sm font-semibold text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>Kembali ke Menu Rumus</span>
+            </button>
+
+            <main id="calculatorArea" class="bg-slate-800 rounded-2xl shadow-xs border border-slate-700 p-6 sm:p-8 space-y-6 fade-in">
+                <!-- Header Kartu Kalkulator -->
+                <div class="border-b border-slate-700 pb-4">
+                    <h2 id="formulaTitle" class="text-xl font-bold text-white">Nama Rumus</h2>
+                    <p id="formulaDescription" class="text-sm text-slate-400 mt-1"></p>
+                    <p class="text-xs text-slate-400 mt-0.5">Rumus utama: <code id="formulaCode" class="font-mono bg-slate-900 px-1.5 py-0.5 rounded text-emerald-400 font-semibold">F = m × a</code></p>
+                </div>
+
+                <!-- Grid Form Input (Akan dibuat dinamis oleh JS berdasarkan rumus yang dipilih) -->
+                <div id="inputsContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <!-- Input fields di-inject di sini -->
+                </div>
+
+                <!-- Notifikasi Indikator Otomatis -->
+                <div id="infoMessage" class="text-xs text-slate-400 flex items-center gap-1.5 bg-slate-900/50 px-3 py-2.5 rounded-lg border border-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="infoText">Masukkan nilai untuk menghitung otomatis. Kosongkan semua untuk reset.</span>
+                </div>
+
+                <!-- Area Langkah Pengerjaan (Saran Fungsionalitas) -->
+                <div id="stepArea" class="hidden fade-in space-y-3 pt-4 border-t border-slate-700">
+                    <h4 class="text-xs font-bold text-emerald-500 uppercase tracking-widest">Langkah Pengerjaan:</h4>
+                    <div id="stepContent" class="font-mono text-sm text-slate-300 bg-slate-900/80 p-4 rounded-xl border border-emerald-900/30 leading-relaxed">
+                    </div>
+                </div>
+            </main>
+        </div>
+
+    </div>
+
+    <!-- Backdrop untuk Panel Riwayat -->
+    <div id="ai-history-backdrop" class="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 hidden transition-opacity duration-300 opacity-0 cursor-pointer"></div>
+
+    <!-- Panel Riwayat AI -->
+    <div id="ai-history-panel" class="fixed inset-y-0 right-0 w-full max-w-sm bg-slate-900/95 shadow-2xl border-l border-slate-800 z-50 translate-x-full transition-transform duration-300 flex flex-col p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Riwayat AI
+            </h3>
+            <button id="closeAiHistoryBtn" class="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div id="ai-history-list" class="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar"></div>
+        <button id="clearAiHistoryBtn" class="mt-4 py-3 text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-widest transition-colors border-t border-slate-800 pt-4 cursor-pointer text-center">
+            Hapus Semua Riwayat
+        </button>
+    </div>
+
+    <!-- Logika JavaScript -->
+    <script type="module">
+        import { GoogleGenAI } from "https://esm.run/@google/genai";
+        // --- KONFIGURASI SATUAN (Saran Nomer 4) ---
+        const unitConfig = {
+            force: { options: ['N', 'kN', 'mN'], factors: { 'N': 1, 'kN': 1000, 'mN': 0.001 } },
+            mass: { options: ['kg', 'g', 'mg', 'ton'], factors: { 'kg': 1, 'g': 0.001, 'mg': 0.000001, 'ton': 1000 } },
+            accel: { options: ['m/s²'], factors: { 'm/s²': 1 } },
+            area: { options: ['m²', 'cm²', 'mm²'], factors: { 'm²': 1, 'cm²': 0.0001, 'mm²': 0.000001 } },
+            density: { options: ['kg/m³', 'g/cm³'], factors: { 'kg/m³': 1, 'g/cm³': 1000 } },
+            volume: { options: ['m³', 'L', 'cm³'], factors: { 'm³': 1, 'L': 0.001, 'cm³': 0.000001 } },
+            pressure: { options: ['Pa', 'kPa', 'atm', 'bar'], factors: { 'Pa': 1, 'kPa': 1000, 'atm': 101325, 'bar': 100000 } },
+            length: { 
+                options: ['nm', 'μm', 'mm', 'cm', 'dm', 'm', 'dam', 'hm', 'km', 'in', 'ft', 'yd', 'mi'], 
+                factors: { 
+                    'nm': 1e-9, 'μm': 1e-6, 'mm': 0.001, 'cm': 0.01, 'dm': 0.1, 'm': 1, 
+                    'dam': 10, 'hm': 100, 'km': 1000, 'in': 0.0254, 'ft': 0.3048, 
+                    'yd': 0.9144, 'mi': 1609.344 
+                } 
+            },
+            voltage: { options: ['V', 'mV', 'kV'], factors: { 'V': 1, 'mV': 0.001, 'kV': 1000 } },
+            current: { options: ['A', 'mA', 'uA'], factors: { 'A': 1, 'mA': 0.001, 'uA': 0.000001 } },
+            resistance: { options: ['Ω', 'kΩ', 'MΩ'], factors: { 'Ω': 1, 'kΩ': 1000, 'MΩ': 1000000 } },
+            temp: { options: ['°C', '°F', 'K', '°R'], factors: { '°C': 1, '°F': 1, 'K': 1, '°R': 1 } },
+            speed: { options: ['m/s', 'km/jam'], factors: { 'm/s': 1, 'km/jam': 0.277778 } },
+            time_unit: { options: ['s', 'menit', 'jam'], factors: { 's': 1, 'menit': 60, 'jam': 3600 } },
+            angle: { options: ['°', 'rad'], factors: { '°': 1, 'rad': 57.2958 } },
+            energy: { options: ['J', 'kJ', 'cal', 'kWh'], factors: { 'J': 1, 'kJ': 1000, 'cal': 4.184, 'kWh': 3600000 } },
+            power: { options: ['W', 'kW', 'hp'], factors: { 'W': 1, 'kW': 1000, 'hp': 745.7 } },
+            inertia: { options: ['kg·m²'], factors: { 'kg·m²': 1 } },
+            momentum: { options: ['kg·m/s'], factors: { 'kg·m/s': 1 } },
+            impulse: { options: ['N·s'], factors: { 'N·s': 1 } },
+            spec_heat: { options: ['J/kg°C', 'cal/g°C'], factors: { 'J/kg°C': 1, 'cal/g°C': 4184 } },
+            heat_cap: { options: ['J/°C', 'cal/°C'], factors: { 'J/°C': 1, 'cal/°C': 4.184 } },
+            latent_heat: { options: ['J/kg', 'cal/g'], factors: { 'J/kg': 1, 'cal/g': 4184 } },
+            temp_diff: { options: ['°C', 'K', '°F', '°R'], factors: { '°C': 1, 'K': 1, '°F': 0.555556, '°R': 0.555556 } },
+            thermal_cond: { options: ['W/m·K'], factors: { 'W/m·K': 1 } },
+            exp_coeff: { options: ['/°C', '/K'], factors: { '/°C': 1, '/K': 1 } },
+            conv_coeff: { options: ['W/m²·K'], factors: { 'W/m²·K': 1 } },
+            mol: { options: ['mol', 'mmol'], factors: { 'mol': 1, 'mmol': 0.001 } },
+            gas_constant: { options: ['J/mol·K', 'L·atm/mol·K'], factors: { 'J/mol·K': 1, 'L·atm/mol·K': 101.325 } },
+            percent: { options: ['%', 'desimal'], factors: { '%': 1, 'desimal': 100 } },
+            entropy_unit: { options: ['J/K', 'kJ/K', 'cal/K'], factors: { 'J/K': 1, 'kJ/K': 1000, 'cal/K': 4.184 } },
+            magnification: { options: ['kali', 'x'], factors: { 'kali': 1, 'x': 1 } },
+            lens_power: { options: ['D'], factors: { 'D': 1 } },
+            frequency: { options: ['Hz', 'kHz', 'MHz'], factors: { 'Hz': 1, 'kHz': 1000, 'MHz': 1000000 } },
+            spring_constant: { options: ['N/m'], factors: { 'N/m': 1 } },
+            intensity: { options: ['W/m²'], factors: { 'W/m²': 1 } },
+            intensity_level: { options: ['dB'], factors: { 'dB': 1 } },
+            charge: { options: ['C', 'mC', 'μC', 'nC'], factors: { 'C': 1, 'mC': 1e-3, 'μC': 1e-6, 'nC': 1e-9 } },
+            electric_field: { options: ['N/C', 'V/m'], factors: { 'N/C': 1, 'V/m': 1 } },
+            capacitance: { options: ['F', 'mF', 'μF', 'nF', 'pF'], factors: { 'F': 1, 'mF': 1e-3, 'μF': 1e-6, 'nF': 1e-9, 'pF': 1e-12 } },
+            magnetic_field: { options: ['T', 'mT', 'μT', 'G'], factors: { 'T': 1, 'mT': 0.001, 'μT': 1e-6, 'G': 1e-4 } },
+            magnetic_flux: { options: ['Wb', 'mWb'], factors: { 'Wb': 1, 'mWb': 0.001 } },
+            inductance: { options: ['H', 'mH', 'μH'], factors: { 'H': 1, 'mH': 0.001, 'μH': 1e-6 } },
+            none: { options: ['-'], factors: { '-': 1 } }
+        };
+
+        // --- DATABASE RUMUS FISIKA ---
+        const formulaDatabase = {
+            newton2: {
+                title: "Hukum II Newton",
+                category: "Dinamika Gerak",
+                equation: "F = m × a",
+                description: "Menjelaskan hubungan antara gaya yang bekerja pada suatu benda, massa benda, dan percepatan yang dialaminya.",
+                variables: [
+                    { id: "F", label: "Gaya (F)", unitType: "force" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "a", label: "Percepatan (a)", unitType: "accel" }
+                ],
+                calculate: (vals) => {
+                    if (vals.F === null) return vals.m * vals.a;
+                    if (vals.m === null) return vals.a !== 0 ? vals.F / vals.a : 0;
+                    if (vals.a === null) return vals.m !== 0 ? vals.F / vals.m : 0;
+                }
+            },
+            pascal: {
+                title: "Hukum Pascal",
+                category: "Fluida Statis",
+                equation: "F1 / A1 = F2 / A2",
+                description: "Menjelaskan bahwa tekanan yang diberikan pada zat cair dalam ruang tertutup akan diteruskan ke segala arah dengan sama besar.",
+                variables: [
+                    { id: "F1", label: "Gaya Penampang 1 (F1)", unitType: "force" },
+                    { id: "A1", label: "Luas Penampang 1 (A1)", unitType: "area" },
+                    { id: "F2", label: "Gaya Penampang 2 (F2)", unitType: "force" },
+                    { id: "A2", label: "Luas Penampang 2 (A2)", unitType: "area" }
+                ],
+                calculate: (vals) => {
+                    if (vals.F1 === null) return (vals.F2 * vals.A1) / vals.A2;
+                    if (vals.A1 === null) return vals.F2 !== 0 ? (vals.F1 * vals.A2) / vals.F2 : 0;
+                    if (vals.F2 === null) return vals.A1 !== 0 ? (vals.F1 * vals.A2) / vals.A1 : 0;
+                    if (vals.A2 === null) return vals.F1 !== 0 ? (vals.F2 * vals.A1) / vals.F1 : 0;
+                }
+            },
+            archimedes: {
+                title: "Hukum Archimedes",
+                category: "Fluida Statis",
+                equation: "Fa = ρ × g × Vbf",
+                description: "Menghitung gaya apung yang dialami benda saat dicelupkan ke dalam fluida, yang besarnya sama dengan berat fluida yang dipindahkan.",
+                variables: [
+                    { id: "Fa", label: "Gaya Apung (Fa)", unitType: "force" },
+                    { id: "rho", label: "Massa Jenis Fluida (ρ)", unitType: "density" },
+                    { id: "g", label: "Percepatan Gravitasi (g)", unitType: "accel" },
+                    { id: "Vbf", label: "Volume Tercelup (Vbf)", unitType: "volume" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Fa === null) return vals.rho * vals.g * vals.Vbf;
+                    if (vals.rho === null) return (vals.g * vals.Vbf) !== 0 ? vals.Fa / (vals.g * vals.Vbf) : 0;
+                    if (vals.g === null) return (vals.rho * vals.Vbf) !== 0 ? vals.Fa / (vals.rho * vals.Vbf) : 0;
+                    if (vals.Vbf === null) return (vals.rho * vals.g) !== 0 ? vals.Fa / (vals.rho * vals.g) : 0;
+                }
+            },
+            hidrostatis: {
+                title: "Tekanan Hidrostatis",
+                category: "Fluida Statis",
+                equation: "Ph = ρ × g × h",
+                description: "Menghitung tekanan yang diberikan oleh zat cair diam pada kedalaman tertentu, tergantung pada massa jenis fluida dan kedalamannya.",
+                variables: [
+                    { id: "Ph", label: "Tekanan Hidrostatis (Ph)", unitType: "pressure" },
+                    { id: "rho", label: "Massa Jenis Zat Cair (ρ)", unitType: "density" },
+                    { id: "g", label: "Percepatan Gravitasi (g)", unitType: "accel" },
+                    { id: "h", label: "Kedalaman Zat Cair (h)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Ph === null) return vals.rho * vals.g * vals.h;
+                    if (vals.rho === null) return (vals.g * vals.h) !== 0 ? vals.Ph / (vals.g * vals.h) : 0;
+                    if (vals.g === null) return (vals.rho * vals.h) !== 0 ? vals.Ph / (vals.rho * vals.h) : 0;
+                    if (vals.h === null) return (vals.rho * vals.g) !== 0 ? vals.Ph / (vals.rho * vals.g) : 0;
+                }
+            },
+            ohm: {
+                title: "Hukum Ohm",
+                category: "Listrik Dinamis",
+                equation: "V = I × R",
+                description: "Menjelaskan hubungan dasar antara tegangan (beda potensial), kuat arus listrik, dan hambatan dalam suatu rangkaian.",
+                variables: [
+                    { id: "V", label: "Tegangan (V)", unitType: "voltage" },
+                    { id: "I", label: "Kuat Arus (I)", unitType: "current" },
+                    { id: "R", label: "Hambatan (R)", unitType: "resistance" }
+                ],
+                calculate: (vals) => {
+                    if (vals.V === null) return vals.I * vals.R;
+                    if (vals.I === null) return vals.R !== 0 ? vals.V / vals.R : 0;
+                    if (vals.R === null) return vals.I !== 0 ? vals.V / vals.I : 0;
+                }
+            },
+            length_conv: {
+                title: "Konversi Panjang (Universal)",
+                category: "Konversi Satuan",
+                equation: "L1 = L2",
+                description: "Mengkonversi nilai panjang dari satu satuan ke satuan lainnya (misal: meter ke kilometer, inch ke cm).",
+                variables: [
+                    { id: "L1", label: "Panjang Awal", unitType: "length" },
+                    { id: "L2", label: "Hasil Konversi", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    return vals.L1 !== null ? vals.L1 : vals.L2;
+                }
+            },
+            temp_conv: {
+                title: "Konversi Suhu (Universal)",
+                category: "Konversi Satuan",
+                equation: "T1 = T2",
+                description: "Mengkonversi nilai suhu dari satu skala ke skala lainnya (misal: Celsius ke Fahrenheit, Kelvin ke Reamur).",
+                variables: [
+                    { id: "T1", label: "Suhu Awal", unitType: "temp" },
+                    { id: "T2", label: "Hasil Konversi", unitType: "temp" }
+                ],
+                calculate: (vals) => {
+                    return vals.T1 !== null ? vals.T1 : vals.T2;
+                }
+            },
+            glb: {
+                title: "Gerak Lurus Beraturan (GLB)",
+                category: "Kinematika",
+                equation: "s = v × t",
+                description: "Menghitung jarak, kecepatan, atau waktu pada gerak benda dengan kecepatan konstan (tidak ada percepatan).",
+                variables: [
+                    { id: "s", label: "Jarak (s)", unitType: "length" },
+                    { id: "v", label: "Kecepatan (v)", unitType: "speed" },
+                    { id: "t", label: "Waktu (t)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.s === null) return vals.v * vals.t;
+                    if (vals.v === null) return vals.t !== 0 ? vals.s / vals.t : 0;
+                    if (vals.t === null) return vals.v !== 0 ? vals.s / vals.v : 0;
+                }
+            },
+            glbb_vt: {
+                title: "GLBB (Kecepatan Akhir)",
+                category: "Kinematika",
+                equation: "vt = v0 + a × t",
+                description: "Menghitung kecepatan akhir benda yang bergerak dengan percepatan konstan selama selang waktu tertentu.",
+                variables: [
+                    { id: "vt", label: "Kec. Akhir (vt)", unitType: "speed" },
+                    { id: "v0", label: "Kec. Awal (v0)", unitType: "speed" },
+                    { id: "a", label: "Percepatan (a)", unitType: "accel" },
+                    { id: "t", label: "Waktu (t)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.vt === null) return vals.v0 + (vals.a * vals.t);
+                    if (vals.v0 === null) return vals.vt - (vals.a * vals.t);
+                    if (vals.a === null) return vals.t !== 0 ? (vals.vt - vals.v0) / vals.t : 0;
+                    if (vals.t === null) return vals.a !== 0 ? (vals.vt - vals.v0) / vals.a : 0;
+                }
+            },
+            glbb_s: {
+                title: "GLBB (Jarak)",
+                category: "Kinematika",
+                equation: "s = v0 × t + 0.5 × a × t²",
+                description: "Menghitung jarak tempuh benda yang bergerak dengan percepatan konstan, berdasarkan kecepatan awal dan waktu.",
+                variables: [
+                    { id: "s", label: "Jarak (s)", unitType: "length" },
+                    { id: "v0", label: "Kec. Awal (v0)", unitType: "speed" },
+                    { id: "t", label: "Waktu (t)", unitType: "time_unit" },
+                    { id: "a", label: "Percepatan (a)", unitType: "accel" }
+                ],
+                calculate: (vals) => {
+                    if (vals.s === null) return (vals.v0 * vals.t) + (0.5 * vals.a * Math.pow(vals.t, 2));
+                    if (vals.v0 === null) return vals.t !== 0 ? (vals.s - (0.5 * vals.a * Math.pow(vals.t, 2))) / vals.t : 0;
+                    if (vals.a === null) return vals.t !== 0 ? (2 * (vals.s - vals.v0 * vals.t)) / Math.pow(vals.t, 2) : 0;
+                    if (vals.t === null) {
+                        if (vals.a === 0) return vals.v0 !== 0 ? vals.s / vals.v0 : 0;
+                        const disc = Math.pow(vals.v0, 2) + 2 * vals.a * vals.s;
+                        return disc >= 0 ? (-vals.v0 + Math.sqrt(disc)) / vals.a : 0;
+                    }
+                }
+            },
+            kelajuan: {
+                title: "Kelajuan",
+                category: "Kinematika",
+                equation: "v = s / t",
+                description: "Menghitung kelajuan (besaran skalar) sebagai perbandingan jarak total yang ditempuh dengan waktu tempuh.",
+                variables: [
+                    { id: "v", label: "Kelajuan (v)", unitType: "speed" },
+                    { id: "s", label: "Jarak (s)", unitType: "length" },
+                    { id: "t", label: "Waktu (t)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.v === null) return vals.t !== 0 ? vals.s / vals.t : 0;
+                    if (vals.s === null) return vals.v * vals.t;
+                    if (vals.t === null) return vals.v !== 0 ? vals.s / vals.v : 0;
+                }
+            },
+            kecepatan: {
+                title: "Kecepatan",
+                category: "Kinematika",
+                equation: "v = Δx / Δt",
+                description: "Menghitung kecepatan (besaran vektor) sebagai perbandingan perpindahan dengan selang waktu.",
+                variables: [
+                    { id: "v", label: "Kecepatan (v)", unitType: "speed" },
+                    { id: "dx", label: "Perpindahan (Δx)", unitType: "length" },
+                    { id: "dt", label: "Selang Waktu (Δt)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.v === null) return vals.dt !== 0 ? vals.dx / vals.dt : 0;
+                    if (vals.dx === null) return vals.v * vals.dt;
+                    if (vals.dt === null) return vals.v !== 0 ? vals.dx / vals.v : 0;
+                }
+            },
+            kecepatan_rata: {
+                title: "Kecepatan Rata-rata",
+                category: "Kinematika",
+                equation: "v = (x2 - x1) / t",
+                description: "Menghitung kecepatan rata-rata benda berdasarkan perubahan posisi dan total waktu yang dibutuhkan.",
+                variables: [
+                    { id: "v", label: "Kecepatan Rata-rata (v)", unitType: "speed" },
+                    { id: "x2", label: "Posisi Akhir (x2)", unitType: "length" },
+                    { id: "x1", label: "Posisi Awal (x1)", unitType: "length" },
+                    { id: "t", label: "Selang Waktu (t)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.v === null) return vals.t !== 0 ? (vals.x2 - vals.x1) / vals.t : 0;
+                    if (vals.x2 === null) return (vals.v * vals.t) + vals.x1;
+                    if (vals.x1 === null) return vals.x2 - (vals.v * vals.t);
+                    if (vals.t === null) return vals.v !== 0 ? (vals.x2 - vals.x1) / vals.v : 0;
+                }
+            },
+            percepatan: {
+                title: "Percepatan",
+                category: "Kinematika",
+                equation: "a = Δv / Δt",
+                description: "Menghitung percepatan sebagai laju perubahan kecepatan per satuan waktu.",
+                variables: [
+                    { id: "a", label: "Percepatan (a)", unitType: "accel" },
+                    { id: "dv", label: "Perubahan Kec. (Δv)", unitType: "speed" },
+                    { id: "dt", label: "Selang Waktu (Δt)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.a === null) return vals.dt !== 0 ? vals.dv / vals.dt : 0;
+                    if (vals.dv === null) return vals.a * vals.dt;
+                    if (vals.dt === null) return vals.a !== 0 ? vals.dv / vals.a : 0;
+                }
+            },
+            percepatan_rata: {
+                title: "Percepatan Rata-rata",
+                category: "Kinematika",
+                equation: "a = (v2 - v1) / t",
+                description: "Menghitung percepatan rata-rata benda berdasarkan perubahan kecepatan awal dan akhir dalam selang waktu tertentu.",
+                variables: [
+                    { id: "a", label: "Percepatan Rata-rata (a)", unitType: "accel" },
+                    { id: "v2", label: "Kecepatan Akhir (v2)", unitType: "speed" },
+                    { id: "v1", label: "Kecepatan Awal (v1)", unitType: "speed" },
+                    { id: "t", label: "Selang Waktu (t)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.a === null) return vals.t !== 0 ? (vals.v2 - vals.v1) / vals.t : 0;
+                    if (vals.v2 === null) return (vals.a * vals.t) + vals.v1;
+                    if (vals.v1 === null) return vals.v2 - (vals.a * vals.t);
+                    if (vals.t === null) return vals.a !== 0 ? (vals.v2 - vals.v1) / vals.a : 0;
+                }
+            },
+            percepatan_sesaat: {
+                title: "Percepatan Sesaat",
+                category: "Kinematika",
+                equation: "a = Δv / Δt (limit Δt → 0)",
+                description: "Menghitung percepatan pada suatu titik waktu tertentu, yaitu perubahan kecepatan yang sangat kecil dibagi interval waktu yang sangat kecil.",
+                variables: [
+                    { id: "a", label: "Percepatan (a)", unitType: "accel" },
+                    { id: "dv", label: "Perubahan Kec. Sangat Kecil (Δv)", unitType: "speed" },
+                    { id: "dt", label: "Interval Waktu Sangat Kecil (Δt)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.a === null) return vals.dt !== 0 ? vals.dv / vals.dt : 0;
+                    if (vals.dv === null) return vals.a * vals.dt;
+                    if (vals.dt === null) return vals.a !== 0 ? vals.dv / vals.a : 0;
+                }
+            },
+            gjb_h: {
+                title: "GJB (Ketinggian)",
+                category: "Kinematika",
+                equation: "h = 0.5 × g × t²",
+                description: "Menghitung ketinggian yang ditempuh benda dalam gerak jatuh bebas (tanpa kecepatan awal) berdasarkan waktu dan gravitasi.",
+                variables: [
+                    { id: "h", label: "Ketinggian (h)", unitType: "length" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" },
+                    { id: "t", label: "Waktu (t)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.h === null) return 0.5 * vals.g * Math.pow(vals.t, 2);
+                    if (vals.g === null) return vals.t !== 0 ? (2 * vals.h) / Math.pow(vals.t, 2) : 0;
+                    if (vals.t === null) return vals.g !== 0 ? Math.sqrt((2 * vals.h) / vals.g) : 0;
+                }
+            },
+            gjb_vt: {
+                title: "GJB (Kecepatan Akhir)",
+                category: "Kinematika",
+                equation: "vt = g × t",
+                description: "Menghitung kecepatan akhir benda dalam gerak jatuh bebas berdasarkan waktu dan gravitasi.",
+                variables: [
+                    { id: "vt", label: "Kec. Akhir (vt)", unitType: "speed" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" },
+                    { id: "t", label: "Waktu (t)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.vt === null) return vals.g * vals.t;
+                    if (vals.g === null) return vals.t !== 0 ? vals.vt / vals.t : 0;
+                    if (vals.t === null) return vals.g !== 0 ? vals.vt / vals.g : 0;
+                }
+            },
+            gjb_vt2: {
+                title: "GJB (Kecepatan Akhir Pangkat 2)",
+                category: "Kinematika",
+                equation: "vt² = 2 × g × h",
+                description: "Menghitung kecepatan akhir benda dalam gerak jatuh bebas berdasarkan ketinggian dan gravitasi, tanpa melibatkan waktu.",
+                variables: [
+                    { id: "vt", label: "Kec. Akhir (vt)", unitType: "speed" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" },
+                    { id: "h", label: "Ketinggian (h)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.vt === null) return Math.sqrt(2 * vals.g * vals.h);
+                    if (vals.g === null) return vals.h !== 0 ? (vals.vt * vals.vt) / (2 * vals.h) : 0;
+                    if (vals.h === null) return vals.g !== 0 ? (vals.vt * vals.vt) / (2 * vals.g) : 0;
+                }
+            },
+            gva_h: {
+                title: "GVA (Ketinggian)",
+                category: "Kinematika",
+                equation: "h = v0 × t - 0.5 × g × t²",
+                description: "Menghitung ketinggian yang dicapai benda dalam gerak vertikal ke atas, dengan kecepatan awal, waktu, dan gravitasi.",
+                variables: [
+                    { id: "h", label: "Ketinggian (h)", unitType: "length" },
+                    { id: "v0", label: "Kec. Awal (v0)", unitType: "speed" },
+                    { id: "t", label: "Waktu (t)", unitType: "time_unit" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" }
+                ],
+                calculate: (vals) => {
+                    if (vals.h === null) return vals.v0 * vals.t - 0.5 * vals.g * Math.pow(vals.t, 2);
+                    if (vals.v0 === null) return vals.t !== 0 ? (vals.h + 0.5 * vals.g * Math.pow(vals.t, 2)) / vals.t : 0;
+                    if (vals.t === null) {
+                        if (vals.g === 0) return vals.v0 !== 0 ? vals.h / vals.v0 : 0;
+                        const disc = Math.pow(vals.v0, 2) - 2 * vals.g * vals.h;
+                        return disc >= 0 ? (vals.v0 - Math.sqrt(disc)) / vals.g : 0;
+                    }
+                    if (vals.g === null) return vals.t !== 0 ? (2 * (vals.v0 * vals.t - vals.h)) / Math.pow(vals.t, 2) : 0;
+                }
+            },
+            gva_vt: {
+                title: "GVA (Kecepatan Akhir)",
+                category: "Kinematika",
+                equation: "vt = v0 - g × t",
+                description: "Menghitung kecepatan akhir benda dalam gerak vertikal ke atas, dengan kecepatan awal, waktu, dan gravitasi.",
+                variables: [
+                    { id: "vt", label: "Kec. Akhir (vt)", unitType: "speed" },
+                    { id: "v0", label: "Kec. Awal (v0)", unitType: "speed" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" },
+                    { id: "t", label: "Waktu (t)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.vt === null) return vals.v0 - vals.g * vals.t;
+                    if (vals.v0 === null) return vals.vt + vals.g * vals.t;
+                    if (vals.g === null) return vals.t !== 0 ? (vals.v0 - vals.vt) / vals.t : 0;
+                    if (vals.t === null) return vals.g !== 0 ? (vals.v0 - vals.vt) / vals.g : 0;
+                }
+            },
+            gva_vt2: {
+                title: "GVA (Kecepatan Akhir Pangkat 2)",
+                category: "Kinematika",
+                equation: "vt² = v0² - 2 × g × h",
+                description: "Menghitung kecepatan akhir benda dalam gerak vertikal ke atas, berdasarkan kecepatan awal, gravitasi, dan ketinggian, tanpa melibatkan waktu.",
+                variables: [
+                    { id: "vt", label: "Kec. Akhir (vt)", unitType: "speed" },
+                    { id: "v0", label: "Kec. Awal (v0)", unitType: "speed" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" },
+                    { id: "h", label: "Ketinggian (h)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.vt === null) return Math.sqrt(Math.max(0, Math.pow(vals.v0, 2) - 2 * vals.g * vals.h));
+                    if (vals.v0 === null) return Math.sqrt(Math.pow(vals.vt, 2) + 2 * vals.g * vals.h);
+                    if (vals.g === null) return vals.h !== 0 ? (Math.pow(vals.v0, 2) - Math.pow(vals.vt, 2)) / (2 * vals.h) : 0;
+                    if (vals.h === null) return vals.g !== 0 ? (Math.pow(vals.v0, 2) - Math.pow(vals.vt, 2)) / (2 * vals.g) : 0;
+                }
+            },
+            parabola_hmax: {
+                title: "Parabola (Ketinggian Maksimum)",
+                category: "Kinematika",
+                equation: "hmax = (v0² × sin²θ) / (2g)",
+                description: "Menghitung ketinggian maksimum yang dapat dicapai oleh proyektil dalam gerak parabola.",
+                variables: [
+                    { id: "hmax", label: "Tinggi Maks (hmax)", unitType: "length" },
+                    { id: "v0", label: "Kec. Awal (v0)", unitType: "speed" },
+                    { id: "theta", label: "Sudut (θ)", unitType: "angle" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" }
+                ],
+                calculate: (vals) => {
+                    const rad = vals.theta * (Math.PI / 180);
+                    if (vals.hmax === null) return (Math.pow(vals.v0, 2) * Math.pow(Math.sin(rad), 2)) / (2 * vals.g);
+                    if (vals.v0 === null) return Math.sqrt((2 * vals.g * vals.hmax) / Math.pow(Math.sin(rad), 2));
+                    if (vals.theta === null) return Math.asin(Math.sqrt(Math.min(1, (2 * vals.g * vals.hmax) / Math.pow(vals.v0, 2)))) * (180 / Math.PI);
+                    if (vals.g === null) return (Math.pow(vals.v0, 2) * Math.pow(Math.sin(rad), 2)) / (2 * vals.hmax);
+                }
+            },
+            parabola_range: {
+                title: "Parabola (Jarak Terjauh)",
+                category: "Kinematika",
+                equation: "R = (v0² × sin 2θ) / g",
+                description: "Menghitung jarak horizontal maksimum yang dapat dicapai oleh proyektil dalam gerak parabola.",
+                variables: [
+                    { id: "R", label: "Jarak Terjauh (R)", unitType: "length" },
+                    { id: "v0", label: "Kec. Awal (v0)", unitType: "speed" },
+                    { id: "theta", label: "Sudut (θ)", unitType: "angle" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" }
+                ],
+                calculate: (vals) => {
+                    const rad = vals.theta * (Math.PI / 180);
+                    if (vals.R === null) return (Math.pow(vals.v0, 2) * Math.sin(2 * rad)) / vals.g;
+                    if (vals.v0 === null) return Math.sqrt((vals.R * vals.g) / Math.sin(2 * rad));
+                    if (vals.theta === null) return (Math.asin(Math.min(1, (vals.R * vals.g) / Math.pow(vals.v0, 2))) / 2) * (180 / Math.PI);
+                    if (vals.g === null) return (Math.pow(vals.v0, 2) * Math.sin(2 * rad)) / vals.R;
+                }
+            },
+            parabola_time: {
+                title: "Parabola (Waktu Total)",
+                category: "Kinematika",
+                equation: "ttot = (2 × v0 × sin θ) / g",
+                description: "Menghitung total waktu yang dibutuhkan proyektil untuk kembali ke ketinggian awal dalam gerak parabola.",
+                variables: [
+                    { id: "ttot", label: "Waktu Total (ttot)", unitType: "time_unit" },
+                    { id: "v0", label: "Kec. Awal (v0)", unitType: "speed" },
+                    { id: "theta", label: "Sudut (θ)", unitType: "angle" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" }
+                ],
+                calculate: (vals) => {
+                    const rad = vals.theta * (Math.PI / 180);
+                    if (vals.ttot === null) return (2 * vals.v0 * Math.sin(rad)) / vals.g;
+                    if (vals.v0 === null) return (vals.ttot * vals.g) / (2 * Math.sin(rad));
+                    if (vals.theta === null) return Math.asin(Math.min(1, (vals.ttot * vals.g) / (2 * vals.v0))) * (180 / Math.PI);
+                    if (vals.g === null) return (2 * vals.v0 * Math.sin(rad)) / vals.ttot;
+                }
+            },
+            parabola_pos: {
+                title: "Parabola (Posisi x & y)",
+                category: "Kinematika",
+                equation: "x = v0 cos θ t ; y = v0 sin θ t - 0.5 g t²",
+                description: "Menghitung posisi horizontal (x) dan vertikal (y) proyektil pada waktu tertentu dalam gerak parabola.",
+                variables: [
+                    { id: "x", label: "Posisi Horizontal (x)", unitType: "length" },
+                    { id: "y", label: "Posisi Vertikal (y)", unitType: "length" },
+                    { id: "v0", label: "Kec. Awal (v0)", unitType: "speed" },
+                    { id: "theta", label: "Sudut (θ)", unitType: "angle" },
+                    { id: "t", label: "Waktu (t)", unitType: "time_unit" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" }
+                ],
+                calculate: (vals) => {
+                    const rad = vals.theta * (Math.PI / 180);
+                    // Engine ini menghitung satu variabel kosong. 
+                    // Jika x kosong, hitung x. Jika y kosong, hitung y.
+                    if (vals.x === null) return vals.v0 * Math.cos(rad) * vals.t;
+                    if (vals.y === null) return (vals.v0 * Math.sin(rad) * vals.t) - (0.5 * vals.g * Math.pow(vals.t, 2));
+                    if (vals.v0 === null) return vals.x / (Math.cos(rad) * vals.t);
+                    if (vals.t === null) return vals.x / (vals.v0 * Math.cos(rad));
+                }
+            },
+            usaha: {
+                title: "Usaha (Work)",
+                category: "Usaha & Energi",
+                equation: "W = F × s",
+                description: "Menghitung usaha yang dilakukan oleh gaya konstan yang menyebabkan perpindahan benda.",
+                variables: [
+                    { id: "W", label: "Usaha (W)", unitType: "energy" },
+                    { id: "F", label: "Gaya (F)", unitType: "force" },
+                    { id: "s", label: "Perpindahan (s)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.W === null) return vals.F * vals.s;
+                    if (vals.F === null) return vals.s !== 0 ? vals.W / vals.s : 0;
+                    if (vals.s === null) return vals.F !== 0 ? vals.W / vals.F : 0;
+                }
+            },
+            energi_kinetik: {
+                title: "Energi Kinetik",
+                category: "Usaha & Energi",
+                equation: "Ek = 0.5 × m × v²",
+                description: "Menghitung energi yang dimiliki benda karena gerakannya, tergantung pada massa dan kecepatannya.",
+                variables: [
+                    { id: "Ek", label: "Energi Kinetik (Ek)", unitType: "energy" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "v", label: "Kecepatan (v)", unitType: "speed" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Ek === null) return 0.5 * vals.m * Math.pow(vals.v, 2);
+                    if (vals.m === null) return vals.v !== 0 ? (2 * vals.Ek) / Math.pow(vals.v, 2) : 0;
+                    if (vals.v === null) return vals.m !== 0 ? Math.sqrt((2 * vals.Ek) / vals.m) : 0;
+                }
+            },
+            energi_potensial: {
+                title: "Energi Potensial",
+                category: "Usaha & Energi",
+                equation: "Ep = m × g × h",
+                description: "Menghitung energi yang dimiliki benda karena posisinya dalam medan gravitasi.",
+                variables: [
+                    { id: "Ep", label: "Energi Potensial (Ep)", unitType: "energy" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" },
+                    { id: "h", label: "Ketinggian (h)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Ep === null) return vals.m * vals.g * vals.h;
+                    if (vals.m === null) return (vals.g * vals.h) !== 0 ? vals.Ep / (vals.g * vals.h) : 0;
+                    if (vals.g === null) return (vals.m * vals.h) !== 0 ? vals.Ep / (vals.m * vals.h) : 0;
+                    if (vals.h === null) return (vals.m * vals.g) !== 0 ? vals.Ep / (vals.m * vals.g) : 0;
+                }
+            },
+            energi_mekanik: {
+                title: "Energi Mekanik",
+                category: "Usaha & Energi",
+                equation: "Em = Ek + Ep",
+                description: "Menghitung total energi mekanik suatu sistem, yaitu jumlah energi kinetik dan energi potensialnya.",
+                variables: [
+                    { id: "Em", label: "Energi Mekanik (Em)", unitType: "energy" },
+                    { id: "Ek", label: "Energi Kinetik (Ek)", unitType: "energy" },
+                    { id: "Ep", label: "Energi Potensial (Ep)", unitType: "energy" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Em === null) return vals.Ek + vals.Ep;
+                    if (vals.Ek === null) return vals.Em - vals.Ep;
+                    if (vals.Ep === null) return vals.Em - vals.Ek;
+                }
+            },
+            daya: {
+                title: "Daya (Power)",
+                category: "Usaha & Energi",
+                equation: "P = W / t",
+                description: "Menghitung laju di mana usaha dilakukan atau energi ditransfer per satuan waktu.",
+                variables: [
+                    { id: "P", label: "Daya (P)", unitType: "power" },
+                    { id: "W", label: "Usaha/Energi (W)", unitType: "energy" },
+                    { id: "t", label: "Waktu (t)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.P === null) return vals.t !== 0 ? vals.W / vals.t : 0;
+                    if (vals.W === null) return vals.P * vals.t;
+                    if (vals.t === null) return vals.P !== 0 ? vals.W / vals.P : 0;
+                }
+            },
+            inersia_titik: {
+                title: "Inersia (Titik Massa)",
+                category: "Dinamika Rotasi",
+                equation: "I = m × r²",
+                description: "Menghitung momen inersia untuk sebuah titik massa yang berotasi pada jarak tertentu dari sumbu.",
+                variables: [
+                    { id: "I", label: "Inersia (I)", unitType: "inertia" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "r", label: "Jari-jari (r)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.I === null) return vals.m * Math.pow(vals.r, 2);
+                    if (vals.m === null) return vals.r !== 0 ? vals.I / Math.pow(vals.r, 2) : 0;
+                    if (vals.r === null) return vals.m !== 0 ? Math.sqrt(vals.I / vals.m) : 0;
+                }
+            },
+            inersia_silinder: {
+                title: "Inersia (Silinder Pejal)",
+                category: "Dinamika Rotasi",
+                equation: "I = 0.5 × m × r²",
+                description: "Menghitung momen inersia untuk silinder pejal yang berotasi melalui sumbu pusatnya.",
+                variables: [
+                    { id: "I", label: "Inersia (I)", unitType: "inertia" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "r", label: "Jari-jari (r)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.I === null) return 0.5 * vals.m * Math.pow(vals.r, 2);
+                    if (vals.m === null) return vals.r !== 0 ? (2 * vals.I) / Math.pow(vals.r, 2) : 0;
+                    if (vals.r === null) return vals.m !== 0 ? Math.sqrt((2 * vals.I) / vals.m) : 0;
+                }
+            },
+            inersia_bola_pejal: {
+                title: "Inersia (Bola Pejal)",
+                category: "Dinamika Rotasi",
+                equation: "I = 2/5 × m × r²",
+                description: "Menghitung momen inersia untuk bola pejal yang berotasi melalui sumbu pusatnya.",
+                variables: [
+                    { id: "I", label: "Inersia (I)", unitType: "inertia" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "r", label: "Jari-jari (r)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.I === null) return 0.4 * vals.m * Math.pow(vals.r, 2);
+                    if (vals.m === null) return vals.r !== 0 ? (2.5 * vals.I) / Math.pow(vals.r, 2) : 0;
+                    if (vals.r === null) return vals.m !== 0 ? Math.sqrt((2.5 * vals.I) / vals.m) : 0;
+                }
+            },
+            inersia_bola_berongga: {
+                title: "Inersia (Bola Berongga)",
+                category: "Dinamika Rotasi",
+                equation: "I = 2/3 × m × r²",
+                description: "Menghitung momen inersia untuk bola berongga yang berotasi melalui sumbu pusatnya.",
+                variables: [
+                    { id: "I", label: "Inersia (I)", unitType: "inertia" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "r", label: "Jari-jari (r)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.I === null) return (2/3) * vals.m * Math.pow(vals.r, 2);
+                    if (vals.m === null) return vals.r !== 0 ? (1.5 * vals.I) / Math.pow(vals.r, 2) : 0;
+                    if (vals.r === null) return vals.m !== 0 ? Math.sqrt((1.5 * vals.I) / vals.m) : 0;
+                }
+            },
+            inersia_batang: {
+                title: "Inersia (Batang - Pusat)",
+                category: "Dinamika Rotasi",
+                equation: "I = 1/12 × m × L²",
+                description: "Menghitung momen inersia untuk batang tipis yang berotasi melalui pusat massanya.",
+                variables: [
+                    { id: "I", label: "Inersia (I)", unitType: "inertia" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "L", label: "Panjang (L)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.I === null) return (1/12) * vals.m * Math.pow(vals.L, 2);
+                    if (vals.m === null) return vals.L !== 0 ? (12 * vals.I) / Math.pow(vals.L, 2) : 0;
+                    if (vals.L === null) return vals.m !== 0 ? Math.sqrt((12 * vals.I) / vals.m) : 0;
+                }
+            },
+            momentum: {
+                title: "Momentum",
+                category: "Momentum & Impuls",
+                equation: "p = m × v",
+                description: "Menghitung momentum linear suatu benda, yaitu hasil kali massa dan kecepatannya.",
+                variables: [
+                    { id: "p", label: "Momentum (p)", unitType: "momentum" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "v", label: "Kecepatan (v)", unitType: "speed" }
+                ],
+                calculate: (vals) => {
+                    if (vals.p === null) return vals.m * vals.v;
+                    if (vals.m === null) return vals.v !== 0 ? vals.p / vals.v : 0;
+                    if (vals.v === null) return vals.m !== 0 ? vals.p / vals.m : 0;
+                }
+            },
+            impuls: {
+                title: "Impuls",
+                category: "Momentum & Impuls",
+                equation: "I = F × Δt",
+                description: "Menghitung impuls, yaitu perubahan momentum yang dihasilkan oleh gaya yang bekerja selama selang waktu tertentu.",
+                variables: [
+                    { id: "I", label: "Impuls (I)", unitType: "impulse" },
+                    { id: "F", label: "Gaya (F)", unitType: "force" },
+                    { id: "dt", label: "Selang Waktu (Δt)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.I === null) return vals.F * vals.dt;
+                    if (vals.F === null) return vals.dt !== 0 ? vals.I / vals.dt : 0;
+                    if (vals.dt === null) return vals.F !== 0 ? vals.I / vals.F : 0;
+                }
+            },
+            impuls_momentum: {
+                title: "Hubungan Impuls-Momentum",
+                category: "Momentum & Impuls",
+                equation: "I = m × (vt - v0)",
+                description: "Menghubungkan impuls yang bekerja pada benda dengan perubahan momentum benda tersebut.",
+                variables: [
+                    { id: "I", label: "Impuls (I)", unitType: "impulse" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "vt", label: "Kec. Akhir (vt)", unitType: "speed" },
+                    { id: "v0", label: "Kec. Awal (v0)", unitType: "speed" }
+                ],
+                calculate: (vals) => {
+                    if (vals.I === null) return vals.m * (vals.vt - vals.v0);
+                    if (vals.m === null) return (vals.vt !== vals.v0) ? vals.I / (vals.vt - vals.v0) : 0;
+                    if (vals.vt === null) return vals.m !== 0 ? (vals.I / vals.m) + vals.v0 : 0;
+                    if (vals.v0 === null) return vals.m !== 0 ? vals.vt - (vals.I / vals.m) : 0;
+                }
+            },
+            kalor_suhu: {
+                title: "Kalor (Perubahan Suhu)",
+                category: "Suhu & Kalor",
+                equation: "Q = m × c × ΔT",
+                description: "Menghitung jumlah kalor yang dibutuhkan untuk mengubah suhu suatu zat, tergantung pada massa, kalor jenis, dan perubahan suhu.",
+                variables: [
+                    { id: "Q", label: "Kalor (Q)", unitType: "energy" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "c", label: "Kalor Jenis (c)", unitType: "spec_heat" },
+                    { id: "dT", label: "Perubahan Suhu (ΔT)", unitType: "temp_diff" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Q === null) return vals.m * vals.c * vals.dT;
+                    if (vals.m === null) return (vals.c * vals.dT) !== 0 ? vals.Q / (vals.c * vals.dT) : 0;
+                    if (vals.c === null) return (vals.m * vals.dT) !== 0 ? vals.Q / (vals.m * vals.dT) : 0;
+                    if (vals.dT === null) return (vals.m * vals.c) !== 0 ? vals.Q / (vals.m * vals.c) : 0;
+                }
+            },
+            kapasitas_kalor: {
+                title: "Kapasitas Kalor",
+                category: "Suhu & Kalor",
+                equation: "C = Q / ΔT",
+                description: "Menghitung kapasitas kalor suatu benda, yaitu jumlah kalor yang dibutuhkan untuk menaikkan suhunya sebesar satu derajat.",
+                variables: [
+                    { id: "C", label: "Kapasitas Kalor (C)", unitType: "heat_cap" },
+                    { id: "Q", label: "Kalor (Q)", unitType: "energy" },
+                    { id: "dT", label: "Perubahan Suhu (ΔT)", unitType: "temp_diff" }
+                ],
+                calculate: (vals) => {
+                    if (vals.C === null) return vals.dT !== 0 ? vals.Q / vals.dT : 0;
+                    if (vals.Q === null) return vals.C * vals.dT;
+                    if (vals.dT === null) return vals.C !== 0 ? vals.Q / vals.C : 0;
+                }
+            },
+            kalor_laten: {
+                title: "Kalor Laten (Wujud)",
+                category: "Suhu & Kalor",
+                equation: "Q = m × L",
+                description: "Menghitung jumlah kalor yang dibutuhkan untuk mengubah wujud suatu zat (misal: melebur, menguap) tanpa perubahan suhu.",
+                variables: [
+                    { id: "Q", label: "Kalor (Q)", unitType: "energy" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "L", label: "Kalor Laten (L)", unitType: "latent_heat" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Q === null) return vals.m * vals.L;
+                    if (vals.m === null) return vals.L !== 0 ? vals.Q / vals.L : 0;
+                    if (vals.L === null) return vals.m !== 0 ? vals.Q / vals.m : 0;
+                }
+            },
+            konduksi_kalor: {
+                title: "Perpindahan Kalor (Konduksi)",
+                category: "Suhu & Kalor",
+                equation: "H = (k × A × ΔT) / d",
+                description: "Menghitung laju perpindahan kalor melalui bahan padat, tergantung pada konduktivitas termal, luas, perbedaan suhu, dan ketebalan.",
+                variables: [
+                    { id: "H", label: "Laju Kalor (H)", unitType: "power" },
+                    { id: "k", label: "Konduktivitas (k)", unitType: "thermal_cond" },
+                    { id: "A", label: "Luas (A)", unitType: "area" },
+                    { id: "dT", label: "Perubahan Suhu (ΔT)", unitType: "temp_diff" },
+                    { id: "d", label: "Tebal (d)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.H === null) return (vals.k * vals.A * vals.dT) / vals.d;
+                    if (vals.k === null) return (vals.A * vals.dT) !== 0 ? (vals.H * vals.d) / (vals.A * vals.dT) : 0;
+                    if (vals.A === null) return (vals.k * vals.dT) !== 0 ? (vals.H * vals.d) / (vals.k * vals.dT) : 0;
+                    if (vals.dT === null) return (vals.k * vals.A) !== 0 ? (vals.H * vals.d) / (vals.k * vals.A) : 0;
+                    if (vals.d === null) return (vals.H !== 0) ? (vals.k * vals.A * vals.dT) / vals.H : 0;
+                }
+            },
+            konveksi_kalor: {
+                title: "Perpindahan Kalor (Konveksi)",
+                category: "Suhu & Kalor",
+                equation: "H = h × A × ΔT",
+                description: "Menghitung laju perpindahan kalor melalui fluida (cair atau gas) akibat pergerakan massa fluida.",
+                variables: [
+                    { id: "H", label: "Laju Kalor (H)", unitType: "power" },
+                    { id: "h", label: "Koef. Konveksi (h)", unitType: "conv_coeff" },
+                    { id: "A", label: "Luas (A)", unitType: "area" },
+                    { id: "dT", label: "Perubahan Suhu (ΔT)", unitType: "temp_diff" }
+                ],
+                calculate: (vals) => {
+                    if (vals.H === null) return vals.h * vals.A * vals.dT;
+                    if (vals.h === null) return (vals.A * vals.dT) !== 0 ? vals.H / (vals.A * vals.dT) : 0;
+                    if (vals.A === null) return (vals.h * vals.dT) !== 0 ? vals.H / (vals.h * vals.dT) : 0;
+                    if (vals.dT === null) return (vals.h * vals.A) !== 0 ? vals.H / (vals.h * vals.A) : 0;
+                }
+            },
+            radiasi_kalor: {
+                title: "Perpindahan Kalor (Radiasi)",
+                category: "Suhu & Kalor",
+                equation: "P = e × σ × A × T⁴",
+                description: "Menghitung daya radiasi termal yang dipancarkan oleh suatu permukaan, berdasarkan emisivitas, konstanta Stefan-Boltzmann, luas, dan suhu mutlak.",
+                variables: [
+                    { id: "P", label: "Daya Radiasi (P)", unitType: "power" },
+                    { id: "e", label: "Emisivitas (e)", unitType: "none" },
+                    { id: "A", label: "Luas (A)", unitType: "area" },
+                    { id: "T", label: "Suhu Mutlak (T)", unitType: "temp" }
+                ],
+                calculate: (vals) => {
+                    const sigma = 5.67e-8;
+                    const T_kelvin = vals.T + 273.15; // Suhu internal dalam Celsius
+                    if (vals.P === null) return vals.e * sigma * vals.A * Math.pow(T_kelvin, 4);
+                    if (vals.e === null) return (sigma * vals.A * Math.pow(T_kelvin, 4)) !== 0 ? vals.P / (sigma * vals.A * Math.pow(T_kelvin, 4)) : 0;
+                    if (vals.A === null) return (vals.e * sigma * Math.pow(T_kelvin, 4)) !== 0 ? vals.P / (vals.e * sigma * Math.pow(T_kelvin, 4)) : 0;
+                    if (vals.T === null) return Math.pow(vals.P / (vals.e * sigma * vals.A), 0.25) - 273.15;
+                }
+            },
+            pemuaian_panjang: {
+                title: "Pemuaian Panjang",
+                category: "Suhu & Kalor",
+                equation: "Lt = L0 × (1 + α × ΔT)",
+                description: "Menghitung perubahan panjang suatu benda akibat perubahan suhu, tergantung pada panjang awal dan koefisien muai panjang.",
+                variables: [
+                    { id: "Lt", label: "Panjang Akhir (Lt)", unitType: "length" },
+                    { id: "L0", label: "Panjang Awal (L0)", unitType: "length" },
+                    { id: "alpha", label: "Koef. Muai Panjang (α)", unitType: "exp_coeff" },
+                    { id: "dT", label: "Perubahan Suhu (ΔT)", unitType: "temp_diff" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Lt === null) return vals.L0 * (1 + vals.alpha * vals.dT);
+                    if (vals.L0 === null) return vals.Lt / (1 + vals.alpha * vals.dT);
+                    if (vals.alpha === null) return (vals.L0 * vals.dT !== 0) ? (vals.Lt - vals.L0) / (vals.L0 * vals.dT) : 0;
+                    if (vals.dT === null) return (vals.L0 * vals.alpha !== 0) ? (vals.Lt - vals.L0) / (vals.L0 * vals.alpha) : 0;
+                }
+            },
+            pemuaian_luas: {
+                title: "Pemuaian Luas",
+                category: "Suhu & Kalor",
+                equation: "At = A0 × (1 + β × ΔT)",
+                description: "Menghitung perubahan luas suatu benda akibat perubahan suhu, tergantung pada luas awal dan koefisien muai luas.",
+                variables: [
+                    { id: "At", label: "Luas Akhir (At)", unitType: "area" },
+                    { id: "A0", label: "Luas Awal (A0)", unitType: "area" },
+                    { id: "beta", label: "Koef. Muai Luas (β)", unitType: "exp_coeff" },
+                    { id: "dT", label: "Perubahan Suhu (ΔT)", unitType: "temp_diff" }
+                ],
+                calculate: (vals) => {
+                    if (vals.At === null) return vals.A0 * (1 + vals.beta * vals.dT);
+                    if (vals.A0 === null) return vals.At / (1 + vals.beta * vals.dT);
+                    if (vals.beta === null) return (vals.A0 * vals.dT !== 0) ? (vals.At - vals.A0) / (vals.A0 * vals.dT) : 0;
+                    if (vals.dT === null) return (vals.A0 * vals.beta !== 0) ? (vals.At - vals.A0) / (vals.A0 * vals.beta) : 0;
+                }
+            },
+            pemuaian_volume: {
+                title: "Pemuaian Volume",
+                category: "Suhu & Kalor",
+                equation: "Vt = V0 × (1 + γ × ΔT)",
+                description: "Menghitung perubahan volume suatu benda akibat perubahan suhu, tergantung pada volume awal dan koefisien muai volume.",
+                variables: [
+                    { id: "Vt", label: "Volume Akhir (Vt)", unitType: "volume" },
+                    { id: "V0", label: "Volume Awal (V0)", unitType: "volume" },
+                    { id: "gamma", label: "Koef. Muai Volume (γ)", unitType: "exp_coeff" },
+                    { id: "dT", label: "Perubahan Suhu (ΔT)", unitType: "temp_diff" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Vt === null) return vals.V0 * (1 + vals.gamma * vals.dT);
+                    if (vals.V0 === null) return vals.Vt / (1 + vals.gamma * vals.dT);
+                    if (vals.gamma === null) return (vals.V0 * vals.dT !== 0) ? (vals.Vt - vals.V0) / (vals.V0 * vals.dT) : 0;
+                    if (vals.dT === null) return (vals.V0 * vals.gamma !== 0) ? (vals.Vt - vals.V0) / (vals.V0 * vals.gamma) : 0;
+                }
+            },
+            gas_ideal: {
+                title: "Hukum Gas Ideal",
+                category: "Termodinamika",
+                equation: "P × V = n × R × T",
+                description: "Menjelaskan hubungan antara tekanan, volume, jumlah mol, dan suhu mutlak gas ideal.",
+                variables: [
+                    { id: "P", label: "Tekanan (P)", unitType: "pressure" },
+                    { id: "V", label: "Volume (V)", unitType: "volume" },
+                    { id: "n", label: "Jumlah Mol (n)", unitType: "mol" },
+                    { id: "R", label: "Tetapan Gas (R)", unitType: "gas_constant" },
+                    { id: "T", label: "Suhu (T)", unitType: "temp" }
+                ],
+                calculate: (vals) => {
+                    const T_kelvin = vals.T + 273.15; // Konversi base Celsius ke Kelvin
+                    if (vals.P === null) return (vals.n * vals.R * T_kelvin) / vals.V;
+                    if (vals.V === null) return (vals.n * vals.R * T_kelvin) / vals.P;
+                    if (vals.n === null) return (vals.P * vals.V) / (vals.R * T_kelvin);
+                    if (vals.R === null) return (vals.P * vals.V) / (vals.n * T_kelvin);
+                    if (vals.T === null) return ((vals.P * vals.V) / (vals.n * vals.R)) - 273.15;
+                }
+            },
+            gay_lussac: {
+                title: "Hukum Gay-Lussac",
+                category: "Termodinamika",
+                equation: "P1 / T1 = P2 / T2",
+                description: "Menjelaskan bahwa pada volume konstan, tekanan gas berbanding lurus dengan suhu mutlaknya.",
+                variables: [
+                    { id: "P1", label: "Tekanan 1 (P1)", unitType: "pressure" },
+                    { id: "T1", label: "Suhu 1 (T1)", unitType: "temp" },
+                    { id: "P2", label: "Tekanan 2 (P2)", unitType: "pressure" },
+                    { id: "T2", label: "Suhu 2 (T2)", unitType: "temp" }
+                ],
+                calculate: (vals) => {
+                    const T1_k = vals.T1 + 273.15;
+                    const T2_k = vals.T2 + 273.15;
+                    if (vals.P1 === null) return (vals.P2 * T1_k) / T2_k;
+                    if (vals.T1 === null) return (vals.P1 * T2_k) / vals.P2 - 273.15;
+                    if (vals.P2 === null) return (vals.P1 * T2_k) / T1_k;
+                    if (vals.T2 === null) return (vals.P2 * T1_k) / vals.P1 - 273.15;
+                }
+            },
+            charles: {
+                title: "Hukum Charles",
+                category: "Termodinamika",
+                equation: "V1 / T1 = V2 / T2",
+                description: "Menjelaskan bahwa pada tekanan konstan, volume gas berbanding lurus dengan suhu mutlaknya.",
+                variables: [
+                    { id: "V1", label: "Volume 1 (V1)", unitType: "volume" },
+                    { id: "T1", label: "Suhu 1 (T1)", unitType: "temp" },
+                    { id: "V2", label: "Volume 2 (V2)", unitType: "volume" },
+                    { id: "T2", label: "Suhu 2 (T2)", unitType: "temp" }
+                ],
+                calculate: (vals) => {
+                    const T1_k = vals.T1 + 273.15;
+                    const T2_k = vals.T2 + 273.15;
+                    if (vals.V1 === null) return (vals.V2 * T1_k) / T2_k;
+                    if (vals.T1 === null) return (vals.V1 * T2_k) / vals.V2 - 273.15;
+                    if (vals.V2 === null) return (vals.V1 * T2_k) / T1_k;
+                    if (vals.T2 === null) return (vals.V2 * T1_k) / vals.V1 - 273.15;
+                }
+            },
+            boyle: {
+                title: "Hukum Boyle",
+                category: "Termodinamika",
+                equation: "P1 × V1 = P2 × V2",
+                description: "Menjelaskan bahwa pada suhu konstan, tekanan gas berbanding terbalik dengan volumenya.",
+                variables: [
+                    { id: "P1", label: "Tekanan 1 (P1)", unitType: "pressure" },
+                    { id: "V1", label: "Volume 1 (V1)", unitType: "volume" },
+                    { id: "P2", label: "Tekanan 2 (P2)", unitType: "pressure" },
+                    { id: "V2", label: "Volume 2 (V2)", unitType: "volume" }
+                ],
+                calculate: (vals) => {
+                    if (vals.P1 === null) return (vals.P2 * vals.V2) / vals.V1;
+                    if (vals.V1 === null) return (vals.P2 * vals.V2) / vals.P1;
+                    if (vals.P2 === null) return (vals.P1 * vals.V1) / vals.V2;
+                    if (vals.V2 === null) return (vals.P1 * vals.V1) / vals.P2;
+                }
+            },
+            carnot: {
+                title: "Efisiensi Mesin Carnot",
+                category: "Termodinamika",
+                equation: "η = (1 - TL / TH) × 100%",
+                description: "Menghitung efisiensi maksimum yang dapat dicapai oleh mesin kalor ideal yang beroperasi antara dua suhu reservoir.",
+                variables: [
+                    { id: "eta", label: "Efisiensi (η)", unitType: "percent" },
+                    { id: "TH", label: "Suhu Tinggi (TH)", unitType: "temp" },
+                    { id: "TL", label: "Suhu Rendah (TL)", unitType: "temp" }
+                ],
+                calculate: (vals) => {
+                    const TH_k = vals.TH + 273.15;
+                    const TL_k = vals.TL + 273.15;
+                    if (vals.eta === null) return (1 - (TL_k / TH_k)) * 100;
+                    if (vals.TH === null) return (TL_k / (1 - (vals.eta / 100))) - 273.15;
+                    if (vals.TL === null) return (TH_k * (1 - (vals.eta / 100))) - 273.15;
+                }
+            },
+            termo_1: {
+                title: "Hukum I Termodinamika",
+                category: "Termodinamika",
+                equation: "ΔU = Q - W",
+                description: "Menyatakan prinsip kekekalan energi, di mana perubahan energi internal sistem sama dengan kalor yang ditambahkan dikurangi usaha yang dilakukan oleh sistem.",
+                variables: [
+                    { id: "dU", label: "Perubahan En. Dalam (ΔU)", unitType: "energy" },
+                    { id: "Q", label: "Kalor (Q)", unitType: "energy" },
+                    { id: "W", label: "Usaha (W)", unitType: "energy" }
+                ],
+                calculate: (vals) => {
+                    if (vals.dU === null) return vals.Q - vals.W;
+                    if (vals.Q === null) return vals.dU + vals.W;
+                    if (vals.W === null) return vals.Q - vals.dU;
+                }
+            },
+            entropy: {
+                title: "Perubahan Entropi (Hukum II)",
+                category: "Termodinamika",
+                equation: "ΔS = Q / T",
+                description: "Menghitung perubahan entropi suatu sistem, yaitu ukuran ketidakteraturan atau keacakan sistem, berdasarkan kalor yang ditransfer dan suhu mutlak.",
+                variables: [
+                    { id: "dS", label: "Perubahan Entropi (ΔS)", unitType: "entropy_unit" },
+                    { id: "Q", label: "Kalor (Q)", unitType: "energy" },
+                    { id: "T", label: "Suhu Mutlak (T)", unitType: "temp" }
+                ],
+                calculate: (vals) => {
+                    const T_k = vals.T + 273.15;
+                    if (vals.dS === null) return vals.Q / T_k;
+                    if (vals.Q === null) return vals.dS * T_k;
+                    if (vals.T === null) return (vals.Q / vals.dS) - 273.15;
+                }
+            },
+            indeks_bias: {
+                title: "Indeks Bias",
+                category: "Optik Geometri",
+                equation: "n = c / v",
+                description: "Menghitung indeks bias suatu medium, yaitu perbandingan cepat rambat cahaya di ruang hampa dengan cepat rambat cahaya di medium tersebut.",
+                variables: [
+                    { id: "n", label: "Indeks Bias (n)", unitType: "none" },
+                    { id: "c", label: "Cepat Rambat Vakum (c)", unitType: "speed" },
+                    { id: "v", label: "Cepat Rambat Medium (v)", unitType: "speed" }
+                ],
+                calculate: (vals) => {
+                    if (vals.n === null) return vals.v !== 0 ? vals.c / vals.v : 0;
+                    if (vals.c === null) return vals.n * vals.v;
+                    if (vals.v === null) return vals.n !== 0 ? vals.c / vals.n : 0;
+                }
+            },
+            snellius: {
+                title: "Hukum Snellius (Pembiasan)",
+                category: "Optik Geometri",
+                equation: "n1 sin θ1 = n2 sin θ2",
+                description: "Menjelaskan hubungan antara sudut datang, sudut bias, dan indeks bias dua medium saat cahaya melintasi batasnya.",
+                variables: [
+                    { id: "n1", label: "Indeks Bias 1 (n1)", unitType: "none" },
+                    { id: "theta1", label: "Sudut Datang (θ1)", unitType: "angle" },
+                    { id: "n2", label: "Indeks Bias 2 (n2)", unitType: "none" },
+                    { id: "theta2", label: "Sudut Bias (θ2)", unitType: "angle" }
+                ],
+                calculate: (vals) => {
+                    const r1 = (vals.theta1 || 0) * Math.PI / 180;
+                    const r2 = (vals.theta2 || 0) * Math.PI / 180;
+                    const s1 = Math.sin(r1);
+                    const s2 = Math.sin(r2);
+                    if (vals.n1 === null) return (s1 !== 0) ? (vals.n2 * s2) / s1 : 0;
+                    if (vals.theta1 === null) {
+                        const res = (vals.n1 !== 0) ? (vals.n2 * s2) / vals.n1 : 0;
+                        return (res >= -1 && res <= 1) ? Math.asin(res) * 180 / Math.PI : 0;
+                    }
+                    if (vals.n2 === null) return (s2 !== 0) ? (vals.n1 * s1) / s2 : 0;
+                    if (vals.theta2 === null) {
+                        const res = (vals.n2 !== 0) ? (vals.n1 * s1) / vals.n2 : 0;
+                        return (res >= -1 && res <= 1) ? Math.asin(res) * 180 / Math.PI : 0;
+                    }
+                }
+            },
+            pemantulan: {
+                title: "Hukum Pemantulan Cahaya",
+                category: "Optik Geometri",
+                equation: "θi = θr",
+                description: "Menyatakan bahwa sudut datang cahaya sama dengan sudut pantul cahaya.",
+                variables: [
+                    { id: "thetai", label: "Sudut Datang (θi)", unitType: "angle" },
+                    { id: "thetar", label: "Sudut Pantul (θr)", unitType: "angle" }
+                ],
+                calculate: (vals) => {
+                    return vals.thetai !== null ? vals.thetai : vals.thetar;
+                }
+            },
+            cermin: {
+                title: "Rumus Umum Cermin",
+                category: "Optik Geometri",
+                equation: "1/f = 1/s + 1/s'",
+                description: "Menghitung hubungan antara jarak fokus cermin, jarak benda, dan jarak bayangan yang terbentuk.",
+                variables: [
+                    { id: "f", label: "Jarak Fokus (f)", unitType: "length" },
+                    { id: "s", label: "Jarak Benda (s)", unitType: "length" },
+                    { id: "sp", label: "Jarak Bayangan (s')", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.f === null) return (vals.s + vals.sp !== 0) ? (vals.s * vals.sp) / (vals.s + vals.sp) : 0;
+                    if (vals.s === null) return (vals.sp !== vals.f) ? (vals.f * vals.sp) / (vals.sp - vals.f) : 0;
+                    if (vals.sp === null) return (vals.s !== vals.f) ? (vals.f * vals.s) / (vals.s - vals.f) : 0;
+                }
+            },
+            perbesaran: {
+                title: "Perbesaran Bayangan (M)",
+                category: "Optik Geometri",
+                equation: "M = |s' / s|",
+                description: "Menghitung perbesaran bayangan yang dihasilkan oleh cermin atau lensa, yaitu perbandingan ukuran bayangan dengan ukuran benda.",
+                variables: [
+                    { id: "M", label: "Perbesaran (M)", unitType: "magnification" },
+                    { id: "s", label: "Jarak Benda (s)", unitType: "length" },
+                    { id: "sp", label: "Jarak Bayangan (s')", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.M === null) return vals.s !== 0 ? Math.abs(vals.sp / vals.s) : 0;
+                    if (vals.s === null) return vals.M !== 0 ? Math.abs(vals.sp / vals.M) : 0;
+                    if (vals.sp === null) return Math.abs(vals.M * vals.s);
+                }
+            },
+            kekuatan_lensa: {
+                title: "Kekuatan Lensa (P)",
+                category: "Optik Geometri",
+                equation: "P = 1 / f",
+                description: "Menghitung kekuatan lensa dalam dioptri, yang merupakan kebalikan dari jarak fokus lensa dalam meter.",
+                variables: [
+                    { id: "P", label: "Kekuatan Lensa (P)", unitType: "lens_power" },
+                    { id: "f", label: "Jarak Fokus (f)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.P === null) return vals.f !== 0 ? 1 / vals.f : 0;
+                    if (vals.f === null) return vals.P !== 0 ? 1 / vals.P : 0;
+                }
+            },
+            freq_period: {
+                title: "Hubungan Frekuensi & Periode",
+                category: "Getaran & Gelombang",
+                equation: "f = 1 / T",
+                description: "Menjelaskan hubungan antara frekuensi (jumlah getaran per detik) dan periode (waktu untuk satu getaran penuh).",
+                variables: [
+                    { id: "f", label: "Frekuensi (f)", unitType: "frequency" },
+                    { id: "T", label: "Periode (T)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.f === null) return vals.T !== 0 ? 1 / vals.T : 0;
+                    if (vals.T === null) return vals.f !== 0 ? 1 / vals.f : 0;
+                }
+            },
+            wave_v: {
+                title: "Cepat Rambat Gelombang",
+                category: "Getaran & Gelombang",
+                equation: "v = f × λ",
+                description: "Menghitung cepat rambat gelombang, yaitu hasil kali frekuensi dan panjang gelombang.",
+                variables: [
+                    { id: "v", label: "Cepat Rambat (v)", unitType: "speed" },
+                    { id: "f", label: "Frekuensi (f)", unitType: "frequency" },
+                    { id: "lam", label: "Panjang Gelombang (λ)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    if (vals.v === null) return vals.f * vals.lam;
+                    if (vals.f === null) return vals.lam !== 0 ? vals.v / vals.lam : 0;
+                    if (vals.lam === null) return vals.f !== 0 ? vals.v / vals.f : 0;
+                }
+            },
+            spring_vibration: {
+                title: "Getaran Pegas",
+                category: "Getaran & Gelombang",
+                equation: "T = 2π × √(m / k)",
+                description: "Menghitung periode getaran sistem massa-pegas, tergantung pada massa benda dan konstanta pegas.",
+                variables: [
+                    { id: "T", label: "Periode (T)", unitType: "time_unit" },
+                    { id: "m", label: "Massa (m)", unitType: "mass" },
+                    { id: "k", label: "Konstanta Pegas (k)", unitType: "spring_constant" }
+                ],
+                calculate: (vals) => {
+                    const pi = Math.PI;
+                    if (vals.T === null) return 2 * pi * Math.sqrt(vals.m / vals.k);
+                    if (vals.m === null) return vals.k * Math.pow(vals.T / (2 * pi), 2);
+                    if (vals.k === null) return vals.m / Math.pow(vals.T / (2 * pi), 2);
+                }
+            },
+            pendulum_vibration: {
+                title: "Getaran Ayunan Bandul",
+                category: "Getaran & Gelombang",
+                equation: "T = 2π × √(L / g)",
+                description: "Menghitung periode ayunan bandul sederhana, tergantung pada panjang tali dan percepatan gravitasi.",
+                variables: [
+                    { id: "T", label: "Periode (T)", unitType: "time_unit" },
+                    { id: "L", label: "Panjang Tali (L)", unitType: "length" },
+                    { id: "g", label: "Gravitasi (g)", unitType: "accel" }
+                ],
+                calculate: (vals) => {
+                    const pi = Math.PI;
+                    if (vals.T === null) return 2 * pi * Math.sqrt(vals.L / vals.g);
+                    if (vals.L === null) return vals.g * Math.pow(vals.T / (2 * pi), 2);
+                    if (vals.g === null) return vals.L / Math.pow(vals.T / (2 * pi), 2);
+                }
+            },
+            melde_law: {
+                title: "Hukum Melde (Cepat Rambat Dawai)",
+                category: "Bunyi",
+                equation: "v = √(F × L / m)",
+                description: "Menghitung cepat rambat gelombang transversal pada dawai atau senar, tergantung pada gaya tegangan, panjang, dan massa dawai.",
+                variables: [
+                    { id: "v", label: "Cepat Rambat (v)", unitType: "speed" },
+                    { id: "F", label: "Gaya Tegangan (F)", unitType: "force" },
+                    { id: "L", label: "Panjang Dawai (L)", unitType: "length" },
+                    { id: "m", label: "Massa Dawai (m)", unitType: "mass" }
+                ],
+                calculate: (vals) => {
+                    if (vals.v === null) return Math.sqrt((vals.F * vals.L) / vals.m);
+                    if (vals.F === null) return (Math.pow(vals.v, 2) * vals.m) / vals.L;
+                    if (vals.L === null) return (Math.pow(vals.v, 2) * vals.m) / vals.F;
+                    if (vals.m === null) return (vals.F * vals.L) / Math.pow(vals.v, 2);
+                }
+            },
+            sound_ti: {
+                title: "Taraf Intensitas Bunyi",
+                category: "Bunyi",
+                equation: "TI = 10 × log(I / I0)",
+                description: "Menghitung taraf intensitas bunyi dalam desibel (dB) berdasarkan intensitas bunyi dan ambang pendengaran.",
+                variables: [
+                    { id: "ti", label: "Taraf Intensitas (TI)", unitType: "intensity_level" },
+                    { id: "I", label: "Intensitas (I)", unitType: "intensity" }
+                ],
+                calculate: (vals) => {
+                    const I0 = 1e-12; // Ambang pendengaran
+                    if (vals.ti === null) return 10 * Math.log10(vals.I / I0);
+                    if (vals.I === null) return I0 * Math.pow(10, vals.ti / 10);
+                }
+            },
+            doppler: {
+                title: "Efek Doppler",
+                category: "Bunyi",
+                equation: "fp = fs × (v ± vp) / (v ± vs)",
+                description: "Menghitung perubahan frekuensi bunyi yang terdengar akibat gerak relatif antara sumber bunyi dan pendengar.",
+                variables: [
+                    { id: "fp", label: "Frekuensi Pendengar (fp)", unitType: "frequency" },
+                    { id: "fs", label: "Frekuensi Sumber (fs)", unitType: "frequency" },
+                    { id: "v", label: "Cepat Rambat Bunyi (v)", unitType: "speed" },
+                    { id: "vp", label: "Kec. Pendengar (+ mendekat)", unitType: "speed" },
+                    { id: "vs", label: "Kec. Sumber (+ menjauh)", unitType: "speed" }
+                ],
+                calculate: (vals) => {
+                    if (vals.fp === null) return (vals.v + vals.vs) !== 0 ? vals.fs * (vals.v + vals.vp) / (vals.v + vals.vs) : 0;
+                    if (vals.fs === null) return (vals.v + vals.vp) !== 0 ? (vals.fp * (vals.v + vals.vs)) / (vals.v + vals.vp) : 0;
+                    if (vals.v === null) return (vals.fp !== vals.fs) ? (vals.fs * vals.vp - vals.fp * vals.vs) / (vals.fp - vals.fs) : 0;
+                    if (vals.vp === null) return vals.fs !== 0 ? (vals.fp / vals.fs) * (vals.v + vals.vs) - vals.v : 0;
+                    if (vals.vs === null) return vals.fp !== 0 ? (vals.fs / vals.fp) * (vals.v + vals.vp) - vals.v : 0;
+                }
+            },
+            coulomb: {
+                title: "Hukum Coulomb",
+                category: "Listrik Statis",
+                equation: "F = k × q1 × q2 / r²",
+                description: "Menghitung gaya tarik-menarik atau tolak-menolak antara dua muatan listrik titik.",
+                variables: [
+                    { id: "F", label: "Gaya Coulomb (F)", unitType: "force" },
+                    { id: "q1", label: "Muatan 1 (q1)", unitType: "charge" },
+                    { id: "q2", label: "Muatan 2 (q2)", unitType: "charge" },
+                    { id: "r", label: "Jarak (r)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    const k = 9e9;
+                    if (vals.F === null) return k * Math.abs(vals.q1 * vals.q2) / Math.pow(vals.r, 2);
+                    if (vals.q1 === null) return (k * vals.q2 !== 0) ? (vals.F * Math.pow(vals.r, 2)) / (k * vals.q2) : 0;
+                    if (vals.q2 === null) return (k * vals.q1 !== 0) ? (vals.F * Math.pow(vals.r, 2)) / (k * vals.q1) : 0;
+                    if (vals.r === null) return (vals.q1 * vals.q2 !== 0 && vals.F !== 0) ? Math.sqrt(k * Math.abs(vals.q1 * vals.q2) / vals.F) : 0;
+                }
+            },
+            medan_listrik: {
+                title: "Kuat Medan Listrik",
+                category: "Listrik Statis",
+                equation: "E = k × q / r²",
+                description: "Menghitung kuat medan listrik yang dihasilkan oleh muatan titik pada jarak tertentu.",
+                variables: [
+                    { id: "E", label: "Medan Listrik (E)", unitType: "electric_field" },
+                    { id: "q", label: "Muatan (q)", unitType: "charge" },
+                    { id: "r", label: "Jarak (r)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    const k = 9e9;
+                    if (vals.E === null) return k * Math.abs(vals.q) / Math.pow(vals.r, 2);
+                    if (vals.q === null) return (vals.E * Math.pow(vals.r, 2)) / k;
+                    if (vals.r === null) return (vals.E !== 0) ? Math.sqrt(k * Math.abs(vals.q) / vals.E) : 0;
+                }
+            },
+            potensial_listrik: {
+                title: "Potensial Listrik",
+                category: "Listrik Statis",
+                equation: "V = k × q / r",
+                description: "Menghitung potensial listrik (energi potensial per satuan muatan) pada titik tertentu di sekitar muatan titik.",
+                variables: [
+                    { id: "V", label: "Potensial (V)", unitType: "voltage" },
+                    { id: "q", label: "Muatan (q)", unitType: "charge" },
+                    { id: "r", label: "Jarak (r)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    const k = 9e9;
+                    if (vals.V === null) return k * vals.q / vals.r;
+                    if (vals.q === null) return vals.V * vals.r / k;
+                    if (vals.r === null) return (vals.V !== 0) ? k * vals.q / vals.V : 0;
+                }
+            },
+            energi_potensial_listrik: {
+                title: "Energi Potensial Listrik",
+                category: "Listrik Statis",
+                equation: "Ep = k × q1 × q2 / r",
+                description: "Menghitung energi potensial yang tersimpan dalam sistem dua muatan listrik titik.",
+                variables: [
+                    { id: "Ep", label: "Energi Potensial (Ep)", unitType: "energy" },
+                    { id: "q1", label: "Muatan 1 (q1)", unitType: "charge" },
+                    { id: "q2", label: "Muatan 2 (q2)", unitType: "charge" },
+                    { id: "r", label: "Jarak (r)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    const k = 9e9;
+                    if (vals.Ep === null) return k * vals.q1 * vals.q2 / vals.r;
+                    if (vals.q1 === null) return (k * vals.q2 !== 0) ? vals.Ep * vals.r / (k * vals.q2) : 0;
+                    if (vals.q2 === null) return (k * vals.q1 !== 0) ? vals.Ep * vals.r / (k * vals.q1) : 0;
+                    if (vals.r === null) return (vals.q1 * vals.q2 !== 0 && vals.Ep !== 0) ? k * vals.q1 * vals.q2 / vals.Ep : 0;
+                }
+            },
+            kapasitor_biasa: {
+                title: "Kapasitas Kapasitor",
+                category: "Listrik Statis",
+                equation: "C = Q / V",
+                description: "Menghitung kapasitas suatu kapasitor, yaitu kemampuan menyimpan muatan listrik per satuan tegangan.",
+                variables: [
+                    { id: "C", label: "Kapasitansi (C)", unitType: "capacitance" },
+                    { id: "Q", label: "Muatan (Q)", unitType: "charge" },
+                    { id: "V", label: "Tegangan (V)", unitType: "voltage" }
+                ],
+                calculate: (vals) => {
+                    if (vals.C === null) return vals.V !== 0 ? vals.Q / vals.V : 0;
+                    if (vals.Q === null) return vals.C * vals.V;
+                    if (vals.V === null) return vals.C !== 0 ? vals.Q / vals.C : 0;
+                }
+            },
+            kapasitor_keping: {
+                title: "Kapasitor Keping Sejajar",
+                category: "Listrik Statis",
+                equation: "C = ε0 × A / d",
+                description: "Menghitung kapasitas kapasitor keping sejajar berdasarkan luas keping dan jarak antar keping.",
+                variables: [
+                    { id: "C", label: "Kapasitansi (C)", unitType: "capacitance" },
+                    { id: "A", label: "Luas Keping (A)", unitType: "area" },
+                    { id: "d", label: "Jarak Antar Keping (d)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    const eps0 = 8.854e-12;
+                    if (vals.C === null) return eps0 * vals.A / vals.d;
+                    if (vals.A === null) return vals.C * vals.d / eps0;
+                    if (vals.d === null) return (vals.C !== 0) ? eps0 * vals.A / vals.C : 0;
+                }
+            },
+            medan_kawat_lurus: {
+                title: "Medan Magnet Kawat Lurus",
+                category: "Medan Magnet",
+                equation: "B = (μ0 × I) / (2π × a)",
+                description: "Menghitung kuat medan magnet di sekitar kawat lurus panjang yang dialiri arus listrik.",
+                variables: [
+                    { id: "B", label: "Induksi Magnet (B)", unitType: "magnetic_field" },
+                    { id: "I", label: "Kuat Arus (I)", unitType: "current" },
+                    { id: "a", label: "Jarak Titik (a)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    const mu0 = 1.256637e-6;
+                    if (vals.B === null) return (mu0 * vals.I) / (2 * Math.PI * vals.a);
+                    if (vals.I === null) return (vals.B * 2 * Math.PI * vals.a) / mu0;
+                    if (vals.a === null) return (mu0 * vals.I) / (2 * Math.PI * vals.B);
+                }
+            },
+            medan_solenoida: {
+                title: "Medan Magnet Solenoida (Pusat)",
+                category: "Medan Magnet",
+                equation: "B = (μ0 × N × I) / L",
+                description: "Menghitung kuat medan magnet di pusat solenoida yang dialiri arus listrik.",
+                variables: [
+                    { id: "B", label: "Induksi Magnet (B)", unitType: "magnetic_field" },
+                    { id: "N", label: "Jumlah Lilitan (N)", unitType: "none" },
+                    { id: "I", label: "Kuat Arus (I)", unitType: "current" },
+                    { id: "L", label: "Panjang Solenoida (L)", unitType: "length" }
+                ],
+                calculate: (vals) => {
+                    const mu0 = 1.256637e-6;
+                    if (vals.B === null) return (mu0 * vals.N * vals.I) / vals.L;
+                    if (vals.N === null) return (vals.B * vals.L) / (mu0 * vals.I);
+                    if (vals.I === null) return (vals.B * vals.L) / (mu0 * vals.N);
+                    if (vals.L === null) return (mu0 * vals.N * vals.I) / vals.B;
+                }
+            },
+            gaya_lorentz_kawat: {
+                title: "Gaya Lorentz (Kawat Berarus)",
+                category: "Medan Magnet",
+                equation: "F = B × I × L × sin θ",
+                description: "Menghitung gaya magnet yang bekerja pada kawat berarus dalam medan magnet eksternal.",
+                variables: [
+                    { id: "F", label: "Gaya Lorentz (F)", unitType: "force" },
+                    { id: "B", label: "Induksi Magnet (B)", unitType: "magnetic_field" },
+                    { id: "I", label: "Kuat Arus (I)", unitType: "current" },
+                    { id: "L", label: "Panjang Kawat (L)", unitType: "length" },
+                    { id: "theta", label: "Sudut (θ)", unitType: "angle" }
+                ],
+                calculate: (vals) => {
+                    const rad = vals.theta * (Math.PI / 180);
+                    if (vals.F === null) return vals.B * vals.I * vals.L * Math.sin(rad);
+                    if (vals.B === null) return vals.F / (vals.I * vals.L * Math.sin(rad));
+                    if (vals.I === null) return vals.F / (vals.B * vals.L * Math.sin(rad));
+                    if (vals.L === null) return vals.F / (vals.B * vals.I * Math.sin(rad));
+                }
+            },
+            gaya_lorentz_muatan: {
+                title: "Gaya Lorentz (Muatan Bergerak)",
+                category: "Medan Magnet",
+                equation: "F = q × v × B × sin θ",
+                description: "Menghitung gaya magnet yang bekerja pada muatan listrik yang bergerak dalam medan magnet.",
+                variables: [
+                    { id: "F", label: "Gaya Lorentz (F)", unitType: "force" },
+                    { id: "q", label: "Muatan (q)", unitType: "charge" },
+                    { id: "v", label: "Kecepatan (v)", unitType: "speed" },
+                    { id: "B", label: "Induksi Magnet (B)", unitType: "magnetic_field" },
+                    { id: "theta", label: "Sudut (θ)", unitType: "angle" }
+                ],
+                calculate: (vals) => {
+                    const rad = vals.theta * (Math.PI / 180);
+                    if (vals.F === null) return Math.abs(vals.q * vals.v * vals.B * Math.sin(rad));
+                    if (vals.q === null) return vals.F / (vals.v * vals.B * Math.sin(rad));
+                    if (vals.v === null) return vals.F / (Math.abs(vals.q) * vals.B * Math.sin(rad));
+                    if (vals.B === null) return vals.F / (Math.abs(vals.q) * vals.v * Math.sin(rad));
+                }
+            },
+            fluks_magnetik: {
+                title: "Fluks Magnetik",
+                category: "Induksi Elektromagnetik",
+                equation: "Φ = B × A × cos θ",
+                description: "Menghitung jumlah garis medan magnet yang menembus suatu luasan, tergantung pada kuat medan, luas, dan sudut orientasi.",
+                variables: [
+                    { id: "Phi", label: "Fluks Magnetik (Φ)", unitType: "magnetic_flux" },
+                    { id: "B", label: "Induksi Magnet (B)", unitType: "magnetic_field" },
+                    { id: "A", label: "Luas Penampang (A)", unitType: "area" },
+                    { id: "theta", label: "Sudut Normal (θ)", unitType: "angle" }
+                ],
+                calculate: (vals) => {
+                    const rad = vals.theta * (Math.PI / 180);
+                    if (vals.Phi === null) return vals.B * vals.A * Math.cos(rad);
+                    if (vals.B === null) return vals.Phi / (vals.A * Math.cos(rad));
+                    if (vals.A === null) return vals.Phi / (vals.B * Math.cos(rad));
+                }
+            },
+            ggl_faraday: {
+                title: "Hukum Faraday (GGL Induksi)",
+                category: "Induksi Elektromagnetik",
+                equation: "ε = N × (ΔΦ / Δt)",
+                description: "Menghitung gaya gerak listrik (GGL) induksi yang dihasilkan oleh perubahan fluks magnetik melalui kumparan.",
+                variables: [
+                    { id: "E", label: "GGL Induksi (ε)", unitType: "voltage" },
+                    { id: "N", label: "Jumlah Lilitan (N)", unitType: "none" },
+                    { id: "dPhi", label: "Perubahan Fluks (ΔΦ)", unitType: "magnetic_flux" },
+                    { id: "dt", label: "Selang Waktu (Δt)", unitType: "time_unit" }
+                ],
+                calculate: (vals) => {
+                    if (vals.E === null) return vals.N * (vals.dPhi / vals.dt);
+                    if (vals.N === null) return (vals.E * vals.dt) / vals.dPhi;
+                    if (vals.dPhi === null) return (vals.E * vals.dt) / vals.N;
+                    if (vals.dt === null) return (vals.N * vals.dPhi) / vals.E;
+                }
+            },
+            ggl_kawat_gerak: {
+                title: "GGL Induksi (Kawat Bergerak)",
+                category: "Induksi Elektromagnetik",
+                equation: "ε = B × L × v × sin θ",
+                description: "Menghitung GGL induksi yang timbul pada kawat yang bergerak dalam medan magnet.",
+                variables: [
+                    { id: "E", label: "GGL Induksi (ε)", unitType: "voltage" },
+                    { id: "B", label: "Induksi Magnet (B)", unitType: "magnetic_field" },
+                    { id: "L", label: "Panjang Kawat (L)", unitType: "length" },
+                    { id: "v", label: "Kecepatan (v)", unitType: "speed" },
+                    { id: "theta", label: "Sudut (θ)", unitType: "angle" }
+                ],
+                calculate: (vals) => {
+                    const rad = vals.theta * (Math.PI / 180);
+                    if (vals.E === null) return vals.B * vals.L * vals.v * Math.sin(rad);
+                    if (vals.B === null) return vals.E / (vals.L * vals.v * Math.sin(rad));
+                    if (vals.L === null) return vals.E / (vals.B * vals.v * Math.sin(rad));
+                    if (vals.v === null) return vals.E / (vals.B * vals.L * Math.sin(rad));
+                }
+            },
+            induktansi_diri: {
+                title: "Induktansi Diri",
+                category: "Induksi Elektromagnetik",
+                equation: "L = (N × Φ) / I",
+                description: "Menghitung induktansi diri suatu kumparan, yaitu kemampuan kumparan untuk menghasilkan GGL induksi akibat perubahan arus sendiri.",
+                variables: [
+                    { id: "L", label: "Induktansi (L)", unitType: "inductance" },
+                    { id: "N", label: "Jumlah Lilitan (N)", unitType: "none" },
+                    { id: "Phi", label: "Fluks Magnetik (Φ)", unitType: "magnetic_flux" },
+                    { id: "I", label: "Kuat Arus (I)", unitType: "current" }
+                ],
+                calculate: (vals) => {
+                    if (vals.L === null) return (vals.N * vals.Phi) / vals.I;
+                    if (vals.N === null) return (vals.L * vals.I) / vals.Phi;
+                    if (vals.Phi === null) return (vals.L * vals.I) / vals.N;
+                    if (vals.I === null) return (vals.N * vals.Phi) / vals.L;
+                }
+            },
+            trafo_vn: {
+                title: "Trafo Ideal (Tegangan & Lilitan)",
+                category: "Induksi Elektromagnetik",
+                equation: "Vp / Vs = Np / Ns",
+                description: "Menjelaskan hubungan antara tegangan dan jumlah lilitan pada transformator ideal.",
+                variables: [
+                    { id: "Vp", label: "Tegangan Primer (Vp)", unitType: "voltage" },
+                    { id: "Vs", label: "Tegangan Sekunder (Vs)", unitType: "voltage" },
+                    { id: "Np", label: "Lilitan Primer (Np)", unitType: "none" },
+                    { id: "Ns", label: "Lilitan Sekunder (Ns)", unitType: "none" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Vp === null) return vals.Ns !== 0 ? (vals.Vs * vals.Np) / vals.Ns : 0;
+                    if (vals.Vs === null) return vals.Np !== 0 ? (vals.Vp * vals.Ns) / vals.Np : 0;
+                    if (vals.Np === null) return vals.Vs !== 0 ? (vals.Vp * vals.Ns) / vals.Vs : 0;
+                    if (vals.Ns === null) return vals.Vp !== 0 ? (vals.Vs * vals.Np) / vals.Vp : 0;
+                }
+            },
+            trafo_vi: {
+                title: "Trafo Ideal (Tegangan & Arus)",
+                category: "Induksi Elektromagnetik",
+                equation: "Vp / Vs = Is / Ip",
+                description: "Menjelaskan hubungan antara tegangan dan kuat arus pada transformator ideal.",
+                variables: [
+                    { id: "Vp", label: "Tegangan Primer (Vp)", unitType: "voltage" },
+                    { id: "Vs", label: "Tegangan Sekunder (Vs)", unitType: "voltage" },
+                    { id: "Is", label: "Arus Sekunder (Is)", unitType: "current" },
+                    { id: "Ip", label: "Arus Primer (Ip)", unitType: "current" }
+                ],
+                calculate: (vals) => {
+                    if (vals.Vp === null) return vals.Ip !== 0 ? (vals.Vs * vals.Is) / vals.Ip : 0;
+                    if (vals.Vs === null) return vals.Is !== 0 ? (vals.Vp * vals.Ip) / vals.Is : 0;
+                    if (vals.Is === null) return vals.Vs !== 0 ? (vals.Vp * vals.Ip) / vals.Vs : 0;
+                    if (vals.Ip === null) return vals.Vp !== 0 ? (vals.Vs * vals.Is) / vals.Vp : 0;
+                }
+            },
+            trafo_efisiensi: {
+                title: "Efisiensi Transformator",
+                category: "Induksi Elektromagnetik",
+                equation: "η = (Ps / Pp) × 100%",
+                description: "Menghitung efisiensi transformator, yaitu perbandingan daya sekunder (output) dengan daya primer (input).",
+                variables: [
+                    { id: "eta", label: "Efisiensi (η)", unitType: "percent" },
+                    { id: "Ps", label: "Daya Sekunder (Ps)", unitType: "power" },
+                    { id: "Pp", label: "Daya Primer (Pp)", unitType: "power" }
+                ],
+                calculate: (vals) => {
+                    if (vals.eta === null) return vals.Pp !== 0 ? (vals.Ps / vals.Pp) * 100 : 0;
+                    if (vals.Ps === null) return (vals.eta / 100) * vals.Pp;
+                    if (vals.Pp === null) return vals.eta !== 0 ? vals.Ps / (vals.eta / 100) : 0;
+                }
+            }
+        };
+
+        // --- 1. KONSOLIDASI ELEMEN DOM (Mencegah Duplicate Declaration) ---
+        const searchBar = document.getElementById('searchBar');
+        const formulaGrid = document.getElementById('formulaGrid');
+        const categoryFilters = document.getElementById('categoryFilters');
+        const mainPage = document.getElementById('main-page');
+        const calcPage = document.getElementById('calc-page');
+        const emptyState = document.getElementById('emptyState');
+        
+        const formulaTitle = document.getElementById('formulaTitle');
+        const formulaDescription = document.getElementById('formulaDescription');
+        const formulaCode = document.getElementById('formulaCode');
+        const inputsContainer = document.getElementById('inputsContainer');
+        const infoMessage = document.getElementById('infoMessage');
+        const infoText = document.getElementById('infoText');
+        const stepArea = document.getElementById('stepArea');
+        const stepContent = document.getElementById('stepContent');
+
+        const aiResultContainer = document.getElementById('aiResultContainer');
+        const aiSolutionContent = document.getElementById('aiSolutionContent');
+        const copyAiBtn = document.getElementById('copyAiBtn');
+        const copyAiStatus = document.getElementById('copyAiStatus');
+        const closeAiBtn = document.getElementById('closeAiBtn');
+
+        const aiHistoryBtn = document.getElementById('aiHistoryBtn');
+        const logoBtn = document.getElementById('logoBtn');
+        const aiHistoryPanel = document.getElementById('ai-history-panel');
+        const aiHistoryList = document.getElementById('ai-history-list');
+        const aiHistoryBackdrop = document.getElementById('ai-history-backdrop');
+        const closeAiHistoryBtn = document.getElementById('closeAiHistoryBtn');
+        const clearAiHistoryBtn = document.getElementById('clearAiHistoryBtn');
+        const btnBackToMenu = document.getElementById('btn-back-to-menu');
+        
+
+        // --- 2. STATE GLOBAL ---
+        let currentFormulaKey = null;
+        let systemCalculatedInput = null;
+        let activeCategory = 'Semua';
+        let favorites = JSON.parse(localStorage.getItem('physics_favorites') || '[]');
+        let aiHistoryData = JSON.parse(localStorage.getItem('ai_physics_history') || '[]');
+
+        function formatNumberInput(input) {
+            // Menghapus karakter selain angka, koma, dan minus
+            let value = input.value.replace(/[^0-9,-]/g, '');
+            input.value = value;
+        }
+
+        // --- 3. LOGIKA FORMULA & PERHITUNGAN (RESTORASI) ---
+        function selectFormula(key) {
+            currentFormulaKey = key;
+            const formula = formulaDatabase[key];
+            
+            formulaTitle.textContent = formula.title;
+            formulaDescription.textContent = formula.description || '';
+            formulaCode.textContent = formula.equation;
+            
+            inputsContainer.className = `grid grid-cols-1 sm:grid-cols-${formula.variables.length} gap-5`;
+            inputsContainer.innerHTML = '';
+
+            formula.variables.forEach(v => {
+                const config = unitConfig[v.unitType];
+                const optionsHtml = config.options.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+                const div = document.createElement('div');
+                div.className = "space-y-1.5";
+                div.innerHTML = `
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500">${v.label}</label>
+                    <div class="relative flex items-center">
+                        <input type="text" id="input_${v.id}" data-id="${v.id}" placeholder="0" 
+                               class="physics-input w-full px-3.5 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white font-medium focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-900 disabled:bg-slate-900 disabled:text-emerald-400 transition-all pr-20 text-sm">
+                        <select id="unit_${v.id}" class="unit-selector absolute right-2 text-[10px] font-bold bg-slate-800/80 border-none text-emerald-400 focus:ring-0 cursor-pointer rounded-lg px-1 py-1">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                `;
+                inputsContainer.appendChild(div);
+            });
+
+            // Pasang Event Listeners ke input baru
+            document.querySelectorAll('.physics-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const el = e.target;
+                    formatNumberInput(el);
+                    handleCalculationLogic();
+                });
+            });
+            
+            document.querySelectorAll('.unit-selector').forEach(sel => {
+                sel.addEventListener('change', () => {
+                    if (systemCalculatedInput) {
+                        systemCalculatedInput.value = '';
+                        systemCalculatedInput.disabled = false;
+                        systemCalculatedInput = null;
+                    }
+                    handleCalculationLogic();
+                });
+            });
+
+            systemCalculatedInput = null;
+            mainPage.classList.add('hidden');
+            calcPage.classList.remove('hidden');
+            updateInfoMessage(false, formula.variables.length);
+            stepArea.classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function handleCalculationLogic() {
+            if (!currentFormulaKey) return;
+            const formula = formulaDatabase[currentFormulaKey];
+            const allInputs = Array.from(document.querySelectorAll('.physics-input'));
+            const totalVariables = formula.variables.length;
+            const requiredToCalculate = totalVariables - 1;
+            const userFilledInputs = allInputs.filter(input => input.value !== '' && !input.disabled);
+
+            if (userFilledInputs.length === requiredToCalculate && !systemCalculatedInput) {
+                const targetInput = allInputs.find(input => input.value === '');
+                if (targetInput) {
+                    const targetId = targetInput.getAttribute('data-id');
+                    const targetUnit = document.getElementById(`unit_${targetId}`).value;
+                    const valuesMap = {};
+
+                    allInputs.forEach(input => {
+                        const id = input.getAttribute('data-id');
+                        if (input.value === '') { valuesMap[id] = null; } 
+                        else {
+                            const val = parseFloat(input.value.replace(/\./g, '').replace(',', '.'));
+                            const varDef = formula.variables.find(v => v.id === id);
+                            const unit = document.getElementById(`unit_${id}`).value;
+                            if (varDef.unitType === 'temp') {
+                                if (unit === '°F') valuesMap[id] = (val - 32) * 5/9;
+                                else if (unit === 'K') valuesMap[id] = val - 273.15;
+                                else if (unit === '°R') valuesMap[id] = val * 5/4;
+                                else valuesMap[id] = val;
+                            } else { 
+                                valuesMap[id] = val * unitConfig[varDef.unitType].factors[unit]; 
+                            }
+                        }
+                    });
+
+                    let result = formula.calculate(valuesMap);
+                    const targetVarDef = formula.variables.find(v => v.id === targetId);
+                    if (targetVarDef.unitType === 'temp') {
+                        if (targetUnit === '°F') result = (result * 9/5) + 32;
+                        else if (targetUnit === 'K') result = result + 273.15;
+                        else if (targetUnit === '°R') result = result * 4/5;
+                    } else { 
+                        result = result / unitConfig[targetVarDef.unitType].factors[targetUnit]; 
+                    }
+
+                    targetInput.value = Number(result.toFixed(4)).toLocaleString('id-ID');
+                    targetInput.disabled = true; 
+                    systemCalculatedInput = targetInput;
+                    showSteps(formula, valuesMap, targetId, targetInput.value, targetUnit);
+                    updateInfoMessage(true, totalVariables);
+                }
+            } else if (userFilledInputs.length < requiredToCalculate && systemCalculatedInput) {
+                systemCalculatedInput.value = ''; 
+                systemCalculatedInput.disabled = false;
+                systemCalculatedInput = null; 
+                stepArea.classList.add('hidden');
+                updateInfoMessage(false, totalVariables);
+            } else if (userFilledInputs.length === 0) {
+                allInputs.forEach(i => { i.value = ''; i.disabled = false; });
+                systemCalculatedInput = null; 
+                stepArea.classList.add('hidden');
+                updateInfoMessage(false, totalVariables);
+            }
+        }
+
+        // --- 4. LOGIKA FAVORIT ---
+        function toggleFavorite(e, key) {
+            e.stopPropagation(); // Mencegah masuk ke kalkulator saat klik bintang
+            if (favorites.includes(key)) {
+                favorites = favorites.filter(k => k !== key);
+            } else {
+                favorites.push(key);
+            }
+            localStorage.setItem('physics_favorites', JSON.stringify(favorites));
+            renderFormulaGrid();
+            applyFilters(); // Re-apply filter agar animasi staggered tetap jalan
+        }
+
+        function renderFormulaGrid() {
+            formulaGrid.innerHTML = '';
+            const sortedKeys = Object.keys(formulaDatabase).sort((a, b) => {
+                const aFav = favorites.includes(a), bFav = favorites.includes(b);
+                return aFav === bFav ? 0 : aFav ? -1 : 1;
+            });
+            for (const key of sortedKeys) {
+                const data = formulaDatabase[key];
+                const isFav = favorites.includes(key); const card = document.createElement('div');
+                card.className = "formula-card bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xs hover:shadow-md hover:border-emerald-500 transition-all cursor-pointer group relative";
+                card.setAttribute('data-key', key);
+                const mainSymbol = data.equation.split(/[=\s×/]+/)[0];
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-4 h-full">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-all shrink-0">
+                                    <span class="text-sm font-bold">${mainSymbol}</span>
+                                </div>
+                                <button onclick="toggleFavorite(event, '${key}')" class="p-1.5 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer">
+                                    <svg class="w-5 h-5 ${isFav ? 'text-amber-400 fill-amber-400' : 'text-slate-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <h3 class="text-base font-bold text-white mb-0.5 truncate">${data.title}</h3>
+                            <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">${data.category}</p>
+                        </div>
+                        <div class="w-20 h-12 bg-slate-900/50 rounded-lg p-1 border border-slate-700/50 self-center shrink-0">
+                            <canvas id="micro-chart-${key}"></canvas>
+                        </div>
+                    </div>
+                `;
+                card.onclick = () => selectFormula(key);
+                formulaGrid.appendChild(card);
+            }
+            sortedKeys.forEach(key => {
+                const canvas = document.getElementById(`micro-chart-${key}`);
+                if (canvas) initMicroChart(canvas, formulaDatabase[key].equation);
+            });
+        }
+
+        // --- 5. LOGIKA UI & PENCARIAN ---
+        function renderCategoryFilters() {
+            const categories = new Set(['Semua']);
+            Object.values(formulaDatabase).forEach(f => categories.add(f.category));
+            
+            categoryFilters.innerHTML = '';
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border ${
+                    cat === activeCategory 
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-900/20' 
+                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-slate-200'
+                }`;
+                btn.innerText = cat;
+                btn.onclick = () => {
+                    activeCategory = cat;
+                    renderCategoryFilters();
+                    applyFilters();
+                };
+                categoryFilters.appendChild(btn);
+            });
+        }
+
+        function applyFilters() {
+            const query = searchBar.value.toLowerCase().trim();
+            const keywords = query === "" ? [] : query.split(/\s+/);
+            const cards = Array.from(document.querySelectorAll('.formula-card'));
+            let visibleIndex = 0; let hasVisibleCard = false;
+            cards.forEach(card => {
+                const data = formulaDatabase[card.getAttribute('data-key')];
+                const searchableText = `${data.title} ${data.category} ${data.equation} ${data.variables.map(v => v.label).join(' ')}`.toLowerCase();
+                const matchesSearch = keywords.length === 0 || keywords.every(kw => searchableText.includes(kw));
+                const matchesCategory = activeCategory === 'Semua' || data.category === activeCategory;
+                if (matchesSearch && matchesCategory) {
+                    card.style.display = "block"; card.style.animation = 'none'; card.offsetHeight;
+                    card.style.animation = `cardZoomIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${visibleIndex * 35}ms forwards`;
+                    visibleIndex++; hasVisibleCard = true;
+                } else { card.style.display = "none"; }
+            });
+            formulaGrid.classList.toggle('hidden', !hasVisibleCard);
+            emptyState.classList.toggle('hidden', hasVisibleCard);
+        }
+
+        function initMicroChart(canvas, equation) {
+            const eq = equation.toLowerCase(); let dataPoints = [0, 2, 4, 6, 8, 10];
+            if (eq.includes('log')) dataPoints = [1, 4, 7, 8.5, 9.5, 10];
+            else if (eq.includes('sin') || eq.includes('cos') || eq.includes('θ')) dataPoints = [0, 6, 10, 6, 0, -6, -10];
+            else if (eq.includes('²') || eq.includes('^2')) dataPoints = [0, 0.5, 2, 5, 10];
+            else if (eq.includes('√')) dataPoints = [0, 4, 6.5, 8.5, 10];
+            else if (eq.includes('/') && (eq.includes('t') || eq.includes('r'))) dataPoints = [10, 5, 3.3, 2.5, 2];
+            new Chart(canvas, {
+                type: 'line',
+                data: { labels: dataPoints.map((_, i) => i), datasets: [{ data: dataPoints, borderColor: '#10b981', borderWidth: 2, pointRadius: 0, tension: 0.4, fill: false }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } }, animation: { duration: 1000 } }
+            });
+        }
+
+        function updateInfoMessage(isCalculated, totalVars) {
+            const req = totalVars - 1;
+            if (isCalculated) {
+                infoMessage.className = "text-xs text-emerald-300 flex items-center gap-1.5 bg-emerald-900/40 px-3 py-2.5 rounded-lg border border-emerald-800";
+                infoText.innerHTML = `Kalkulasi otomatis berhasil diterapkan pada variabel bertanda <strong>hijau</strong>.`;
+            } else {
+                infoMessage.className = "text-xs text-slate-400 flex items-center gap-1.5 bg-slate-900/50 px-3 py-2.5 rounded-lg border border-slate-700";
+                infoText.innerHTML = `Masukkan nilai pada <strong>${req}</strong> kotak input untuk kalkulasi otomatis.`;
+            }
+        }
+
+        closeAiBtn.addEventListener('click', () => { aiResultContainer.classList.add('hidden'); aiSolutionContent.innerHTML = ""; });
+
+        function toggleAiHistory() {
+            const isClosing = !aiHistoryPanel.classList.contains('translate-x-full');
+            
+            if (isClosing) {
+                aiHistoryPanel.classList.add('translate-x-full');
+                aiHistoryBackdrop.classList.add('opacity-0');
+                setTimeout(() => aiHistoryBackdrop.classList.add('hidden'), 300);
+            } else {
+                renderAiHistory();
+                aiHistoryPanel.classList.remove('translate-x-full');
+                aiHistoryBackdrop.classList.remove('hidden');
+                // Memicu reflow agar transisi opacity berjalan
+                aiHistoryBackdrop.offsetHeight; 
+                aiHistoryBackdrop.offsetHeight; aiHistoryBackdrop.classList.remove('opacity-0');
+            }
+        }
+        function saveAiHistory(query, responseHtml) {
+            const entry = {
+                id: Date.now(),
+                query: query,
+                response: responseHtml,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+            };
+            aiHistoryData.unshift(entry);
+            if (aiHistoryData.length > 20) aiHistoryData.pop();
+            localStorage.setItem('ai_physics_history', JSON.stringify(aiHistoryData));
+        }
+        function renderAiHistory() {
+            if (aiHistoryData.length === 0) { aiHistoryList.innerHTML = '<p class="text-slate-500 text-xs text-center mt-10">Belum ada riwayat.</p>'; return; }
+            aiHistoryList.innerHTML = aiHistoryData.map(item => `
+                <div onclick="openAiHistoryItem(${item.id})" class="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 hover:border-indigo-500/30 transition-all cursor-pointer relative group">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">${item.date} • ${item.time}</span>
+                        <button onclick="event.stopPropagation(); deleteAiHistoryItem(${item.id})" class="p-1 text-slate-500 hover:text-red-400 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-300 font-medium line-clamp-2 italic">"${item.query}"</p>
+                </div>
+            `).join('');
+        }
+        function openAiHistoryItem(id) {
+            const item = aiHistoryData.find(i => i.id === id);
+            if (item) { aiResultContainer.classList.remove('hidden'); aiSolutionContent.innerHTML = item.response; toggleAiHistory(); aiResultContainer.scrollIntoView({ behavior: 'smooth' }); }
+        }
+        function deleteAiHistoryItem(id) { aiHistoryData = aiHistoryData.filter(i => i.id !== id); localStorage.setItem('ai_physics_history', JSON.stringify(aiHistoryData)); renderAiHistory(); }
+        function clearAiHistory() { if (confirm('Hapus seluruh riwayat AI?')) { aiHistoryData = []; localStorage.removeItem('ai_physics_history'); renderAiHistory(); } }
+
+        aiHistoryBtn.onclick = toggleAiHistory; 
+        logoBtn.onclick = () => window.location.href = 'solusi_tugas.html';
+        closeAiHistoryBtn.onclick = toggleAiHistory; 
+        aiHistoryBackdrop.onclick = toggleAiHistory; 
+        clearAiHistoryBtn.onclick = clearAiHistory;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !aiHistoryPanel.classList.contains('translate-x-full')) {
+                toggleAiHistory();
+            }
+        });
+        copyAiBtn.onclick = () => {
+            navigator.clipboard.writeText(aiSolutionContent.innerText).then(() => {
+                copyAiStatus.classList.remove('hidden'); setTimeout(() => copyAiStatus.classList.add('hidden'), 2000);
+            });
+        };
+
+        // --- 7. EVENT LISTENERS & NAVIGATION ---
+        searchBar.oninput = applyFilters;
+        btnBackToMenu.addEventListener('click', () => {
+            calcPage.classList.add('hidden'); mainPage.classList.remove('hidden'); currentFormulaKey = null; searchBar.value = ""; activeCategory = 'Semua'; renderCategoryFilters(); applyFilters();
+        });
+
+        function showSteps(formula, valuesMap, targetId, resultVal, resultUnit) {
+            let substitution = formula.equation; formula.variables.forEach(v => { const val = v.id === targetId ? '?' : valuesMap[v.id]; substitution = substitution.replace(v.id, `(${val})`); });
+            stepContent.innerHTML = `Rumus: ${formula.equation}<br>Substitusi: ${substitution}<br>Hasil: <span class="text-emerald-400 font-bold">${resultVal} ${resultUnit}</span>`;
+            stepArea.classList.remove('hidden');
+        }
+
+        document.getElementById('btn-home-back').onclick = (e) => {
+            e.preventDefault(); document.body.classList.add('page-exit');
+            setTimeout(() => window.location.href = 'index.html?mode=menu', 500);
+        };
+
+        // --- 8. JALANKAN INISIALISASI ---
+        renderFormulaGrid();
+        renderCategoryFilters();
+        applyFilters(); // Memastikan grid awal tampil dengan benar
+
+        // Mengekspos fungsi ke window agar tetap bisa dipanggil dari HTML (karena type="module")
+        window.toggleFavorite = toggleFavorite;
+        window.openAiHistoryItem = openAiHistoryItem;
+        window.deleteAiHistoryItem = deleteAiHistoryItem;
+    </script>
+</body>
+</html>

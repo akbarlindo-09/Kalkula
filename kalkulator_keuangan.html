@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Keuangan - Kalkula</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .tab-active { @apply border-emerald-500 text-emerald-500 bg-emerald-500/10 border-b-2; }
+        .page-exit { opacity: 0 !important; transform: scale(1.05) !important; filter: blur(10px); transition: all 0.5s ease-in-out; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-6">
+
+    <div class="w-full max-w-2xl mt-8 space-y-8">
+        <a href="index.html?mode=menu" id="btn-home-back" class="inline-flex items-center space-x-2 text-sm font-semibold text-slate-400 hover:text-emerald-400 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            <span>Kembali ke Beranda</span>
+        </a>
+
+        <header class="text-center space-y-2">
+            <h1 class="text-3xl font-bold text-white tracking-tight">Kalkulator Keuangan Pro</h1>
+            <p class="text-slate-500 text-sm">Simulasi investasi, target dana, dan cicilan pinjaman.</p>
+        </header>
+
+        <!-- Tab Switcher -->
+        <div class="flex bg-slate-800 p-1 rounded-2xl border border-slate-700 overflow-x-auto custom-scrollbar gap-1">
+            <button onclick="switchTab('investasi')" id="tab-inv" class="flex-1 min-w-[100px] py-3 text-[10px] font-bold rounded-xl transition-all cursor-default tab-active uppercase tracking-wider">Investasi</button>
+            <button onclick="switchTab('target')" id="tab-tar" class="flex-1 min-w-[100px] py-3 text-[10px] font-bold rounded-xl transition-all cursor-default text-slate-400 uppercase tracking-wider">Target Dana</button>
+            <button onclick="switchTab('pensiun')" id="tab-ret" class="flex-1 min-w-[100px] py-3 text-[10px] font-bold rounded-xl transition-all cursor-default text-slate-400 uppercase tracking-wider">Pensiun</button>
+            <button onclick="switchTab('pinjaman')" id="tab-pin" class="flex-1 min-w-[100px] py-3 text-[10px] font-bold rounded-xl transition-all cursor-default text-slate-400 uppercase tracking-wider">Pinjaman</button>
+            <button onclick="switchTab('banding')" id="tab-com" class="flex-1 min-w-[100px] py-3 text-[10px] font-bold rounded-xl transition-all cursor-default text-slate-400 uppercase tracking-wider">Banding Pinj</button>
+            <button onclick="switchTab('banding_inv')" id="tab-com-inv" class="flex-1 min-w-[100px] py-3 text-[10px] font-bold rounded-xl transition-all cursor-default text-slate-400 uppercase tracking-wider">Banding Inv</button>
+        </div>
+
+        <main class="bg-slate-800 border border-slate-700 p-6 rounded-[2rem] shadow-2xl space-y-6">
+            <div id="input-fields" class="grid grid-cols-1 gap-4">
+                <!-- Fields diisi via JS -->
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center border-t border-slate-700 pt-6">
+                <div class="space-y-4">
+                    <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-700">
+                        <span id="result-label" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Estimasi Hasil Akhir</span>
+                        <div id="result-value" class="text-3xl font-extrabold text-emerald-400 mt-1">Rp 0</div>
+                    </div>
+                    <div class="bg-slate-900/30 p-4 rounded-xl space-y-2">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-500" id="detail-label-1">Modal Awal</span>
+                            <span class="font-bold text-slate-300" id="detail-val-1">Rp 0</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-500" id="detail-label-2">Total Bunga/Profit</span>
+                            <span class="font-bold text-emerald-500" id="detail-val-2">Rp 0</span>
+                        </div>
+                        <div id="real-value-row" class="hidden flex justify-between text-xs pt-2 border-t border-slate-700/50">
+                            <span class="text-slate-500">Daya Beli (Nilai Riil)</span>
+                            <span class="font-bold text-amber-400" id="real-value-text">Rp 0</span>
+                        </div>
+                        <div id="diff-value-row" class="hidden flex justify-between text-xs pt-2 border-t border-slate-700/50">
+                            <span class="text-slate-500">Selisih Penghematan</span>
+                            <span class="font-bold text-emerald-400" id="diff-value-text">Rp 0</span>
+                        </div>
+                        <div id="fire-time-row" class="hidden flex justify-between text-xs pt-2 border-t border-slate-700/50">
+                            <span class="text-slate-500">Estimasi Capai FIRE</span>
+                            <span class="font-bold text-indigo-400" id="fire-time-text">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="h-44 flex justify-center">
+                    <canvas id="financeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Export & Share Actions -->
+            <div class="pt-4 border-t border-slate-700/50 space-y-3">
+                <button onclick="downloadPDF(this)" class="w-full py-3.5 bg-slate-700/40 hover:bg-emerald-600 text-slate-300 hover:text-white font-bold rounded-xl transition-all cursor-default flex items-center justify-center gap-2 border border-slate-600 hover:border-emerald-500 group">
+                    <svg class="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Unduh Laporan PDF</span>
+                </button>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="shareReport('whatsapp')" class="py-3 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-500 hover:text-white text-xs font-bold rounded-xl transition-all cursor-default flex items-center justify-center gap-2 border border-emerald-500/20">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.353-.883-.788-1.48-1.76-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.87 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.163-1.617a11.811 11.815 0 005.883 1.632h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                        <span>WhatsApp</span>
+                    </button>
+                    <button onclick="shareReport('email')" class="py-3 bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white text-xs font-bold rounded-xl transition-all cursor-default flex items-center justify-center gap-2 border border-indigo-500/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <span>Email</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Area Grafik Amortisasi (Saran Estetik) -->
+            <div id="amortization-chart-area" class="hidden space-y-4 pt-6 border-t border-slate-700">
+                <h4 class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest text-center">Analisis Komposisi Cicilan</h4>
+                <div class="h-64">
+                    <canvas id="amortizationChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Area Amortisasi (Khusus Pinjaman) -->
+            <div id="amortization-area" class="hidden space-y-4 pt-6 border-t border-slate-700">
+                <h4 class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest text-center">Jadwal Amortisasi (12 Bulan Pertama)</h4>
+                <div class="overflow-x-auto rounded-xl border border-slate-700 custom-scrollbar">
+                    <table class="w-full text-[10px] text-left text-slate-400">
+                        <thead class="bg-slate-900/50 text-slate-500 font-bold uppercase">
+                            <tr>
+                                <th class="px-3 py-2">Bln</th>
+                                <th class="px-3 py-2">Pokok</th>
+                                <th class="px-3 py-2">Bunga</th>
+                                <th class="px-3 py-2">Sisa Hutang</th>
+                            </tr>
+                        </thead>
+                        <tbody id="amortization-body" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let activeTab = 'investasi';
+        let myChart = null;
+        let amChart = null;
+
+        const configs = {
+            investasi: {
+                label: "Estimasi Hasil Investasi",
+                fields: [
+                    { id: 'principal', label: 'Modal Awal (Rp)', placeholder: '1000000' },
+                    { id: 'rate', label: 'Bunga Per Tahun (%)', placeholder: '10' },
+                    { id: 'time', label: 'Jangka Waktu (Tahun)', placeholder: '5' },
+                    { id: 'inflation', label: 'Asumsi Inflasi (%)', placeholder: '4' }
+                ]
+            },
+            target: {
+                label: "Tabungan Bulanan Diperlukan",
+                fields: [
+                    { id: 'target', label: 'Target Dana (Rp)', placeholder: '100000000' },
+                    { id: 'rate', label: 'Bunga Per Tahun (%)', placeholder: '10' },
+                    { id: 'time', label: 'Jangka Waktu (Tahun)', placeholder: '10' },
+                    { id: 'inflation', label: 'Asumsi Inflasi (%)', placeholder: '4' }
+                ]
+            },
+            pinjaman: {
+                label: "Total Hutang (Pokok + Bunga)",
+                fields: [
+                    { id: 'principal', label: 'Jumlah Pinjaman (Rp)', placeholder: '50000000' },
+                    { id: 'rate', label: 'Bunga Per Tahun (%)', placeholder: '12' },
+                    { id: 'time', label: 'Tenor (Bulan)', placeholder: '12' }
+                ]
+            },
+            banding: {
+                label: "Perbandingan Skenario Pinjaman",
+                fields: [
+                    { id: 'principal', label: 'Pokok Pinjaman (Rp)', placeholder: '100.000.000' },
+                    { id: 'rate', label: 'Bunga A vs B (%)', placeholder: '10 vs 12' },
+                    { id: 'time', label: 'Tenor A vs B (Bulan)', placeholder: '12 vs 24' }
+                ]
+            },
+            banding_inv: {
+                label: "Perbandingan Investasi",
+                fields: []
+            },
+            pensiun: {
+                label: "Dana Pensiun Yang Dibutuhkan (FIRE)",
+                fields: [
+                    { id: 'principal', label: 'Tabungan Saat Ini (Rp)', placeholder: '50.000.000' },
+                    { id: 'expense', label: 'Pengeluaran Bulanan Saat Ini (Rp)', placeholder: '5.000.000' },
+                    { id: 'time', label: 'Tahun Menuju Pensiun', placeholder: '20' },
+                    { id: 'rate', label: 'Estimasi Return Investasi (%)', placeholder: '8' },
+                    { id: 'inflation', label: 'Estimasi Inflasi (%)', placeholder: '4' }
+                ]
+            }
+        };
+
+        function switchTab(tab) {
+            activeTab = tab;
+            ['tab-inv', 'tab-tar', 'tab-ret', 'tab-pin', 'tab-com', 'tab-com-inv'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.remove('tab-active', 'text-slate-400');
+            });
+            const activeBtn = 
+                tab === 'investasi' ? 'tab-inv' : 
+                tab === 'target' ? 'tab-tar' : 
+                tab === 'pensiun' ? 'tab-ret' : 
+                tab === 'pinjaman' ? 'tab-pin' : 
+                tab === 'banding' ? 'tab-com' : 'tab-com-inv';
+            document.getElementById(activeBtn).classList.add('tab-active');
+            renderFields();
+        }
+
+        function renderFields() {
+            const container = document.getElementById('input-fields');
+            if (activeTab === 'banding') {
+                container.className = "grid grid-cols-1 gap-6";
+                container.innerHTML = `
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-wider">Pokok Pinjaman (Rp)</label>
+                        <input type="text" id="p_comp" oninput="handleInputMask(event)" placeholder="100.000.000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-emerald-500 outline-none transition-all">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Bunga A (%)</label><input type="number" id="r_a" oninput="calculateFinance()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none"></div>
+                        <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Bunga B (%)</label><input type="number" id="r_b" oninput="calculateFinance()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none"></div>
+                        <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tenor A (Bln)</label><input type="number" id="t_a" oninput="calculateFinance()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none"></div>
+                        <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tenor B (Bln)</label><input type="number" id="t_b" oninput="calculateFinance()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none"></div>
+                    </div>
+                `;
+            } else if (activeTab === 'banding_inv') {
+                container.className = "grid grid-cols-1 gap-6";
+                container.innerHTML = `
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-wider">Modal Awal (Rp)</label>
+                        <input type="text" id="p_inv_comp" oninput="handleInputMask(event)" placeholder="10.000.000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-emerald-500 outline-none transition-all">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Bunga A (%)</label><input type="number" id="r_inv_a" oninput="calculateFinance()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none"></div>
+                        <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Bunga B (%)</label><input type="number" id="r_inv_b" oninput="calculateFinance()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none"></div>
+                        <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Waktu A (Thn)</label><input type="number" id="t_inv_a" oninput="calculateFinance()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none"></div>
+                        <div class="space-y-1.5"><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Waktu B (Thn)</label><input type="number" id="t_inv_b" oninput="calculateFinance()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none"></div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Compounding A</label>
+                            <select id="n_inv_a" onchange="calculateFinance()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none text-xs"><option value="1">Tahunan</option><option value="2">Semesteran</option><option value="4">Kuartalan</option><option value="12">Bulanan</option><option value="365">Harian</option></select>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Compounding B</label>
+                            <select id="n_inv_b" onchange="calculateFinance()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none text-xs"><option value="1">Tahunan</option><option value="2">Semesteran</option><option value="4">Kuartalan</option><option value="12">Bulanan</option><option value="365">Harian</option></select>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.className = "grid grid-cols-1 sm:grid-cols-2 gap-4";
+                container.innerHTML = configs[activeTab].fields.map(f => `
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-wider">${f.label}</label>
+                        <input type="text" id="${f.id}" oninput="handleInputMask(event)" placeholder="${f.placeholder}" 
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-emerald-500 outline-none transition-all">
+                    </div>
+                `).join('');
+            }
+            calculateFinance();
+        }
+
+        function handleInputMask(e) {
+            const input = e.target;
+            const id = input.id;
+            let value = input.value.replace(/\./g, "");
+            
+            // Terapkan masking ribuan hanya pada field modal atau target
+            if (id === 'principal' || id === 'target' || id === 'p_comp' || id === 'p_inv_comp' || id === 'expense') {
+                if (!isNaN(value) && value !== "") {
+                    const cursor = input.selectionStart;
+                    const oldLen = input.value.length;
+                    input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                    const newLen = input.value.length;
+                    input.setSelectionRange(cursor + (newLen - oldLen), cursor + (newLen - oldLen));
+                }
+            }
+            calculateFinance();
+        }
+
+        function calculateFinance() {
+            const getRawValue = (id) => {
+                const el = document.getElementById(id);
+                if (!el) return 0;
+                let val = el.value;
+                if (id === 'principal' || id === 'target' || id === 'p_comp' || id === 'p_inv_comp' || id === 'expense') val = val.replace(/\./g, "");
+                return parseFloat(val) || 0;
+            };
+
+            const p = getRawValue('principal') || getRawValue('target') || getRawValue('p_comp') || getRawValue('p_inv_comp') || 0;
+            const exp = getRawValue('expense') || 0;
+            const r = getRawValue('rate') / 100;
+            const t = getRawValue('time');
+            const inf = getRawValue('inflation') / 100;
+            
+            let mainResult = 0, detail1 = 0, detail2 = 0;
+            let realValue = 0;
+            document.getElementById('amortization-chart-area').classList.add('hidden');
+            document.getElementById('amortization-area').classList.add('hidden');
+            document.getElementById('real-value-row').classList.add('hidden');
+            document.getElementById('diff-value-row').classList.add('hidden');
+            document.getElementById('fire-time-row').classList.add('hidden');
+
+            if (activeTab === 'investasi') {
+                mainResult = p * Math.pow((1 + r), t);
+                detail1 = p;
+                detail2 = mainResult - p;
+                document.getElementById('detail-label-1').innerText = "Modal Awal";
+                document.getElementById('detail-label-2').innerText = "Total Profit";
+
+                if (inf > 0 && t > 0) {
+                    realValue = mainResult / Math.pow((1 + inf), t);
+                }
+            } 
+            else if (activeTab === 'target') {
+                const monthlyRate = r / 12;
+                const totalMonths = t * 12;
+                if (monthlyRate > 0) {
+                    mainResult = (p * monthlyRate) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
+                } else {
+                    mainResult = p / totalMonths;
+                }
+                detail1 = mainResult * totalMonths;
+                detail2 = p - detail1;
+                document.getElementById('detail-label-1').innerText = "Total Tabungan";
+                document.getElementById('detail-label-2').innerText = "Profit Bunga";
+
+                if (inf > 0 && t > 0) {
+                    realValue = p / Math.pow((1 + inf), t);
+                }
+            }
+            else if (activeTab === 'pinjaman') {
+                const monthlyRate = r / 12;
+                const cicilan = (p * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -t));
+                mainResult = cicilan * t;
+                detail1 = p;
+                detail2 = mainResult - p;
+                document.getElementById('detail-label-1').innerText = "Pokok Pinjaman";
+                document.getElementById('detail-label-2').innerText = "Total Bunga";
+                if (p > 0 && t > 0) renderAmortization(p, monthlyRate, cicilan, t);
+            }
+            else if (activeTab === 'banding') {
+                const ra = getRawValue('r_a') / 100 / 12;
+                const rb = getRawValue('r_b') / 100 / 12;
+                const ta = getRawValue('t_a');
+                const tb = getRawValue('t_b');
+                
+                const cicilanA = ra > 0 ? (p * ra) / (1 - Math.pow(1 + ra, -ta)) : (p/ta);
+                const cicilanB = rb > 0 ? (p * rb) / (1 - Math.pow(1 + rb, -tb)) : (p/tb);
+                
+                const totalA = cicilanA * ta || 0;
+                const totalB = cicilanB * tb || 0;
+                
+                mainResult = totalA; // Default display A
+                detail1 = totalB;   // Simpan B di detail 1 untuk perbandingan
+                detail2 = Math.abs(totalA - totalB);
+                
+                document.getElementById('detail-label-1').innerText = "Total Pengembalian B";
+                document.getElementById('detail-label-2').innerText = "Selisih Total";
+                document.getElementById('result-label').innerText = "Total Pengembalian A";
+                
+                updateComparisonChart(totalA, totalB);
+                return; // Override chart standar
+            }
+            else if (activeTab === 'banding_inv') {
+                const ra = getRawValue('r_inv_a') / 100;
+                const rb = getRawValue('r_inv_b') / 100;
+                const ta = getRawValue('t_inv_a');
+                const tb = getRawValue('t_inv_b');
+                const na = getRawValue('n_inv_a');
+                const nb = getRawValue('n_inv_b');
+
+                const totalA = p * Math.pow((1 + ra/na), (na * ta)) || 0;
+                const totalB = p * Math.pow((1 + rb/nb), (nb * tb)) || 0;
+
+                mainResult = totalA;
+                detail1 = totalB;
+                detail2 = Math.abs(totalA - totalB);
+
+                document.getElementById('detail-label-1').innerText = "Hasil Investasi B";
+                document.getElementById('detail-label-2').innerText = "Selisih Hasil";
+                document.getElementById('result-label').innerText = "Hasil Investasi A";
+
+                updateComparisonChart(totalA, totalB);
+                return;
+            }
+            else if (activeTab === 'pensiun') {
+                // Hitung pengeluaran bulanan di masa depan berdasarkan inflasi
+                const futureMonthlyExpense = exp * Math.pow((1 + inf), t);
+                // Gunakan 4% safe withdrawal rate (FIRE Rule)
+                mainResult = (futureMonthlyExpense * 12) / 0.04;
+                
+                // Hitung proyeksi tabungan di masa depan (Current savings + interest)
+                detail1 = p * Math.pow((1 + r), t);
+                // Selisih antara kebutuhan vs proyeksi
+                detail2 = mainResult - detail1;
+
+                document.getElementById('detail-label-1').innerText = "Proyeksi Tabungan Masa Depan";
+                document.getElementById('detail-label-2').innerText = detail2 > 0 ? "Kekurangan Dana" : "Kelebihan Dana";
+                document.getElementById('result-label').innerText = configs[activeTab].label;
+                
+                // Hitung estimasi waktu mencapai FIRE (Fitur Baru)
+                let yearsToFire = "-";
+                if (p > 0 && exp > 0) {
+                    const fireTargetNow = (exp * 12) / 0.04;
+                    if (p >= fireTargetNow) {
+                        yearsToFire = "Sudah Tercapai";
+                    } else if (r > inf) {
+                        // Rumus: t = ln(Target_FIRE / Aset_Sekarang) / ln((1+Return)/(1+Inflasi))
+                        const t_reach = Math.log((exp * 300) / p) / Math.log((1 + r) / (1 + inf));
+                        yearsToFire = t_reach > 0 ? Math.ceil(t_reach) + " Tahun lagi" : "Sudah Tercapai";
+                    } else {
+                        yearsToFire = "Tidak akan tercapai (Return ≤ Inflasi)";
+                    }
+                }
+                document.getElementById('fire-time-row').classList.remove('hidden');
+                document.getElementById('fire-time-text').innerText = yearsToFire;
+
+                updateChart(detail1, Math.max(0, detail2));
+                renderRetirementVisuals(mainResult, detail1);
+                return;
+            }
+
+            document.getElementById('result-label').innerText = configs[activeTab].label;
+            document.getElementById('result-value').innerText = "Rp " + Math.round(mainResult).toLocaleString('id-ID');
+            document.getElementById('detail-val-1').innerText = "Rp " + Math.round(detail1).toLocaleString('id-ID');
+            document.getElementById('detail-val-2').innerText = "Rp " + Math.round(detail2).toLocaleString('id-ID');
+            
+            if (realValue > 0) {
+                document.getElementById('real-value-row').classList.remove('hidden');
+                document.getElementById('real-value-text').innerText = "Rp " + Math.round(realValue).toLocaleString('id-ID');
+            }
+
+            updateChart(detail1, detail2);
+        }
+
+        function renderRetirementVisuals(needed, projected) {
+            document.getElementById('result-value').innerText = "Rp " + Math.round(needed).toLocaleString('id-ID');
+            document.getElementById('detail-val-1').innerText = "Rp " + Math.round(projected).toLocaleString('id-ID');
+            const diff = needed - projected;
+            document.getElementById('detail-val-2').innerText = "Rp " + Math.round(Math.abs(diff)).toLocaleString('id-ID');
+            document.getElementById('detail-val-2').className = diff > 0 ? "font-bold text-red-400" : "font-bold text-emerald-500";
+        }
+
+        /**
+         * Fungsi Unduh Laporan PDF yang Estetik
+         */
+        function downloadPDF(btn) {
+            const chartCanvas = document.getElementById('financeChart');
+            const chartImg = chartCanvas.toDataURL('image/png');
+            
+            // Generate Ringkasan Input
+            let inputSummaryHTML = '';
+            const inputs = document.querySelectorAll('#input-fields input, #input-fields select');
+            inputs.forEach(input => {
+                const label = input.previousElementSibling ? input.previousElementSibling.innerText : "Parameter";
+                const val = input.value || "0";
+                inputSummaryHTML += `
+                    <div style="padding: 10px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${label}</div>
+                        <div style="font-size: 13px; color: #1e293b; font-weight: 700; margin-top: 2px;">${val}</div>
+                    </div>`;
+            });
+
+            const element = document.createElement('div');
+            element.innerHTML = `
+                <div style="padding: 50px; color: #1e293b; background: white; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.6;">
+                    <!-- Decorative Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid #10b981; padding-bottom: 25px; margin-bottom: 40px;">
+                        <div>
+                            <h1 style="margin: 0; color: #0f172a; font-size: 32px; font-weight: 800;">KALKULA <span style="color: #10b981;">PRO</span></h1>
+                            <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 3px; font-weight: 700;">Financial Intelligence Report</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="margin: 0; color: #94a3b8; font-size: 10px; font-weight: 800; text-transform: uppercase;">Diterbitkan Pada</p>
+                            <p style="margin: 0; color: #1e293b; font-size: 14px; font-weight: 700;">${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        </div>
+                    </div>
+
+                    <!-- Report Header -->
+                    <div style="margin-bottom: 40px; text-align: center;">
+                        <p style="margin: 0; color: #64748b; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Hasil Analisis: ${configs[activeTab].label}</p>
+                        <h2 style="margin: 15px 0; color: #059669; font-size: 54px; font-weight: 800; letter-spacing: -2px;">${document.getElementById('result-value').innerText}</h2>
+                        <div style="width: 80px; height: 5px; background: #10b981; margin: 0 auto; border-radius: 10px; opacity: 0.3;"></div>
+                    </div>
+
+                    <div style="display: flex; gap: 40px; margin-bottom: 40px;">
+                        <!-- Left: Breakdown -->
+                        <div style="flex: 1;">
+                            <h3 style="font-size: 14px; color: #0f172a; border-left: 5px solid #10b981; padding-left: 15px; margin-bottom: 25px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Ringkasan Data</h3>
+                            <div style="display: flex; flex-direction: column; gap: 18px;">
+                                <div style="padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                                    <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; font-weight: 700;">${document.getElementById('detail-label-1').innerText}</p>
+                                    <p style="margin: 4px 0 0 0; color: #1e293b; font-size: 18px; font-weight: 700;">${document.getElementById('detail-val-1').innerText}</p>
+                                </div>
+                                <div style="padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                                    <p style="margin: 0; color: #94a3b8; font-size: 11px; text-transform: uppercase; font-weight: 700;">${document.getElementById('detail-label-2').innerText}</p>
+                                    <p style="margin: 4px 0 0 0; color: #059669; font-size: 18px; font-weight: 700;">${document.getElementById('detail-val-2').innerText}</p>
+                                </div>
+                                ${!document.getElementById('real-value-row').classList.contains('hidden') ? `
+                                <div style="padding: 15px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 15px;">
+                                    <p style="margin: 0; color: #d97706; font-size: 10px; text-transform: uppercase; font-weight: 800;">Nilai Riil (Daya Beli)</p>
+                                    <p style="margin: 4px 0 0 0; color: #92400e; font-size: 18px; font-weight: 800;">${document.getElementById('real-value-text').innerText}</p>
+                                </div>` : ''}
+                                ${!document.getElementById('fire-time-row').classList.contains('hidden') ? `
+                                <div style="padding: 15px; background: #eef2ff; border: 1px solid #e0e7ff; border-radius: 15px;">
+                                    <p style="margin: 0; color: #4f46e5; font-size: 10px; text-transform: uppercase; font-weight: 800;">Estimasi FIRE</p>
+                                    <p style="margin: 4px 0 0 0; color: #3730a3; font-size: 18px; font-weight: 800;">${document.getElementById('fire-time-text').innerText}</p>
+                                </div>` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Right: Chart Visual -->
+                        <div style="flex: 1.1; background: #f8fafc; border-radius: 24px; padding: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #f1f5f9;">
+                             <img src="${chartImg}" style="max-width: 280px; width: 100%; height: auto; filter: drop-shadow(0 15px 25px rgba(0,0,0,0.08));">
+                             <p style="margin-top: 25px; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">Statistik Visual</p>
+                        </div>
+                    </div>
+
+                    <!-- Inputs Grid -->
+                    <h3 style="font-size: 14px; color: #0f172a; border-left: 5px solid #10b981; padding-left: 15px; margin-bottom: 25px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Parameter Input</h3>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 50px;">
+                        ${inputSummaryHTML}
+                    </div>
+
+                    <!-- Footer -->
+                    <div style="margin-top: auto; border-top: 2px solid #f1f5f9; padding-top: 30px; text-align: center;">
+                        <p style="margin: 0; color: #94a3b8; font-size: 11px; font-weight: 700;">Laporan otomatis dari sistem <strong>Kalkula Pro</strong></p>
+                        <p style="margin: 8px 0 0 0; color: #cbd5e1; font-size: 10px; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.4;">Hasil simulasi ini hanya bertujuan sebagai referensi edukatif dan bukan merupakan nasihat keuangan resmi.</p>
+                    </div>
+                </div>
+            `;
+
+            const opt = {
+                margin: 0,
+                filename: `Kalkula_Pro_Report_${activeTab.toUpperCase()}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { scale: 3, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            const span = btn.querySelector('span');
+            const originalText = span.innerText;
+            span.innerText = "Memproses...";
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                span.innerText = originalText;
+            });
+        }
+
+        /**
+         * Fungsi Berbagi Laporan (Coba kirim file PDF, fallback ke ringkasan teks)
+         */
+        async function shareReport(platform) {
+            const label = configs[activeTab].label;
+            const resVal = document.getElementById('result-value').innerText;
+            const det1L = document.getElementById('detail-label-1').innerText;
+            const det1V = document.getElementById('detail-val-1').innerText;
+            const det2L = document.getElementById('detail-label-2').innerText;
+            const det2V = document.getElementById('detail-val-2').innerText;
+
+            // 1. Buat ringkasan teks yang bersih
+            let textSummary = `*LAPORAN KALKULA PRO*\n--------------------------\n`;
+            textSummary += `Analisis: ${label}\n`;
+            textSummary += `Hasil Utama: *${resVal}*\n\n`;
+            textSummary += `Detail:\n- ${det1L}: ${det1V}\n- ${det2L}: ${det2V}\n`;
+            
+            if (!document.getElementById('fire-time-row').classList.contains('hidden')) {
+                textSummary += `- Estimasi FIRE: ${document.getElementById('fire-time-text').innerText}\n`;
+            }
+            textSummary += `\n_Dihitung menggunakan Aplikasi Kalkula_\n${window.location.href}`;
+
+            // 2. Fungsi Fallback (Pasti jalan di semua perangkat)
+            const executeFallback = () => {
+                if (platform === 'whatsapp') {
+                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textSummary)}`, '_blank');
+                } else {
+                    window.location.href = `mailto:?subject=${encodeURIComponent('Laporan Kalkula Pro')}&body=${encodeURIComponent(textSummary.replace(/\*/g, ''))}`;
+                }
+            };
+
+            try {
+                // 3. Gunakan Web Share API jika tersedia (Hanya di HTTPS/Localhost & Mobile)
+                if (navigator.share) {
+                    await navigator.share({ title: 'Laporan Kalkula Pro', text: textSummary.replace(/\*/g, ''), url: window.location.href });
+                } else {
+                    executeFallback();
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') executeFallback();
+            }
+        }
+
+        function updateComparisonChart(valA, valB) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            const data = {
+                labels: ['Skenario A', 'Skenario B'],
+                datasets: [{
+                    label: 'Total Rupiah',
+                    data: [Math.round(valA), Math.round(valB)],
+                    backgroundColor: ['#10b981', '#334155'],
+                    borderRadius: 8
+                }]
+            };
+
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 } } },
+                        x: { grid: { display: false }, ticks: { color: '#f8fafc' } }
+                    }
+                }
+            });
+        }
+
+        function renderAmortization(principal, rate, cicilan, months) {
+            const body = document.getElementById('amortization-body');
+            document.getElementById('amortization-area').classList.remove('hidden');
+            let html = '', balance = principal;
+            
+            for (let i = 1; i <= Math.min(months, 12); i++) {
+                const interest = balance * rate;
+                const pokok = cicilan - interest;
+                balance -= pokok;
+                html += `<tr>
+                    <td class="px-3 py-2 font-bold text-slate-500">${i}</td>
+                    <td class="px-3 py-2">Rp ${Math.round(pokok).toLocaleString('id-ID')}</td>
+                    <td class="px-3 py-2 text-red-400">Rp ${Math.round(interest).toLocaleString('id-ID')}</td>
+                    <td class="px-3 py-2 text-emerald-400 font-bold">Rp ${Math.max(0, Math.round(balance)).toLocaleString('id-ID')}</td>
+                </tr>`;
+            }
+            body.innerHTML = html;
+        }
+
+        function updateChart(val1, val2) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            const data = {
+                labels: ['Utama', 'Bunga/Profit'],
+                datasets: [{
+                    data: [Math.abs(val1), Math.abs(val2)],
+                    backgroundColor: ['#1e293b', '#10b981'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            };
+
+            if (myChart) {
+                myChart.data = data;
+                myChart.update();
+            } else {
+                myChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: data,
+                    options: {
+                        cutout: '75%',
+                        plugins: { legend: { display: false } },
+                        animation: { animateRotate: true }
+                    }
+                });
+            }
+        }
+
+        window.onload = renderFields;
+        document.getElementById('btn-home-back').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.body.classList.add('page-exit');
+            setTimeout(() => window.location.href = 'index.html?mode=menu', 500);
+        });
+    </script>
+</body>
+</html>
